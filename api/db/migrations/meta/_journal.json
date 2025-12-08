@@ -1,1 +1,13 @@
-{"version":"7","dialect":"sqlite","entries":[]}
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1765237041567,
+      "tag": "0000_round_cloak",
+      "breakpoints": true
+    }
+  ]
+}
