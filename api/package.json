@@ -8,9 +8,11 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "better-auth": "^1.4.6",
     "better-sqlite3": "^12.5.0",
     "drizzle-orm": "^0.45.0",
-    "hono": "^4.10.7"
+    "hono": "^4.10.7",
+    "resend": "^6.5.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
