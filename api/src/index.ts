@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user";
 import snippetRoutes from "./routes/snippets";
 import tagRoutes from "./routes/tags";
+import collectionRoutes from "./routes/collections";
 
 const app = new Hono();
 
@@ -36,6 +37,7 @@ app.route("/api/auth", authRoutes);
 app.route("/api", userRoutes);
 app.route("/api/snippets", snippetRoutes);
 app.route("/api/tags", tagRoutes);
+app.route("/api/collections", collectionRoutes);
 
 // Error handlers
 app.onError((err, c) => {
