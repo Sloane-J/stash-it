@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user";
 import snippetRoutes from "./routes/snippets";
+import tagRoutes from "./routes/tags";
 
 const app = new Hono();
 
@@ -34,6 +35,7 @@ app.get("/", (c) => {
 app.route("/api/auth", authRoutes);
 app.route("/api", userRoutes);
 app.route("/api/snippets", snippetRoutes);
+app.route("/api/tags", tagRoutes);
 
 // Error handlers
 app.onError((err, c) => {
