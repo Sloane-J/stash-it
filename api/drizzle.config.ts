@@ -1,10 +1,10 @@
-import type { Config } from "drizzle-kit";
+import type { Config } from 'drizzle-kit'
 
 export default {
-  schema: "./db/schema.ts",
-  out: "./db/migrations",
-  dialect: "sqlite",
+  schema: './db/schema.ts',
+  out: './db/migrations',
+  dialect: 'turso',  
   dbCredentials: {
-    url: "./data/stash_it-local.db",
-  },
-} satisfies Config;
+    url: 'file:data/stashit-local.db',  
+  }
+} satisfies Config

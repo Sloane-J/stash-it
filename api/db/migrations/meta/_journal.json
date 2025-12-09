@@ -8,6 +8,13 @@
       "when": 1765237041567,
       "tag": "0000_round_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1765240894030,
+      "tag": "0001_grey_calypso",
+      "breakpoints": true
     }
   ]
 }

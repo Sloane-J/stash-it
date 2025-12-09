@@ -1,24 +1,26 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import authRoutes from "./routes/auth";
+import userRoutes from "./routes/user";
 
 const app = new Hono();
 
-// CORS - allows frontend to call API
+// CORS
 app.use(
   "/*",
   cors({
-    origin: ["http://localhost:5173", "https://your-frontend.vercel.app"], // Update with your frontend URL
+    origin: ["http://localhost:5173", "https://your-frontend.vercel.app"],
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
-// Logger - logs all requests to console
+// Logger
 app.use("/*", logger());
 
-// Health check - confirms server is running
+// Health check
 app.get("/", (c) => {
   return c.json({
     status: "ok",
@@ -27,7 +29,11 @@ app.get("/", (c) => {
   });
 });
 
-// Global error handler
+// Mount routes
+app.route("/api/auth", authRoutes);
+app.route("/api", userRoutes);
+
+// Error handlers
 app.onError((err, c) => {
   console.error("Server error:", err);
   return c.json(
@@ -39,7 +45,6 @@ app.onError((err, c) => {
   );
 });
 
-// 404 handler
 app.notFound((c) => {
   return c.json({ error: "Not found" }, 404);
 });
