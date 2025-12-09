@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/user";
+import snippetRoutes from "./routes/snippets";
 
 const app = new Hono();
 
@@ -32,6 +33,7 @@ app.get("/", (c) => {
 // Mount routes
 app.route("/api/auth", authRoutes);
 app.route("/api", userRoutes);
+app.route("/api/snippets", snippetRoutes);
 
 // Error handlers
 app.onError((err, c) => {
