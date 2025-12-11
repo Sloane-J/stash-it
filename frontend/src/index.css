@@ -1,0 +1,498 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  /* ===================================
+     SHADCN/UI SEMANTIC VARIABLES (LIGHT MODE)
+     Mapped to Stash It color system
+     =================================== */
+  --radius: 0.625rem;
+  
+  /* Backgrounds - White/Light Gray */
+  --background: oklch(100% 0 0); /* #ffffff */
+  --foreground: oklch(20% 0 0); /* Near black text */
+  
+  /* Cards - Light gray elevated surfaces */
+  --card: oklch(97% 0 0); /* #f5f5f5 */
+  --card-foreground: oklch(20% 0 0);
+  
+  /* Popovers */
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(20% 0 0);
+  
+  /* Primary - Your purple (#6366f1) */
+  --primary: oklch(62% 0.22 275); /* #6366f1 */
+  --primary-foreground: oklch(100% 0 0); /* White text on purple */
+  
+  /* Secondary - Light gray surfaces */
+  --secondary: oklch(95% 0 0); /* #f0f0f0 */
+  --secondary-foreground: oklch(20% 0 0);
+  
+  /* Muted - Subtle backgrounds */
+  --muted: oklch(96% 0 0); /* #f5f5f5 */
+  --muted-foreground: oklch(50% 0 0); /* Mid-gray text */
+  
+  /* Accent - Slightly darker than muted */
+  --accent: oklch(94% 0 0);
+  --accent-foreground: oklch(20% 0 0);
+  
+  /* Destructive - Your danger red (#d94a4a) */
+  --destructive: oklch(60% 0.19 25); /* #d94a4a */
+  --destructive-foreground: oklch(100% 0 0);
+  
+  /* Borders & Inputs */
+  --border: oklch(88% 0 0); /* #e0e0e0 */
+  --input: oklch(88% 0 0);
+  --ring: oklch(62% 0.22 275); /* Primary color for focus rings */
+  
+  /* Charts - Keep original values */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  
+  /* Sidebar - Light mode */
+  --sidebar: oklch(98% 0 0); /* Very light gray */
+  --sidebar-foreground: oklch(20% 0 0);
+  --sidebar-primary: oklch(62% 0.22 275); /* Your purple */
+  --sidebar-primary-foreground: oklch(100% 0 0);
+  --sidebar-accent: oklch(95% 0 0);
+  --sidebar-accent-foreground: oklch(20% 0 0);
+  --sidebar-border: oklch(90% 0 0);
+  --sidebar-ring: oklch(62% 0.22 275);
+
+  /* ===================================
+     STASH IT CUSTOM VARIABLES
+     These are used throughout the app
+     =================================== */
+
+  /* Absolute Colors */
+  --clr-dark-a0: #000000;
+  --clr-light-a0: #ffffff;
+
+  /* Primary Colors (Indigo/Purple) - HEX for easy reference */
+  --clr-primary-a0: #6366f1;
+  --clr-primary-a10: #7976f3;
+  --clr-primary-a20: #8d86f5;
+  --clr-primary-a30: #9f96f7;
+  --clr-primary-a40: #b0a7f9;
+  --clr-primary-a50: #c1b8fb;
+
+  /* Surface Colors - Light Mode (inverted from dark) */
+  --clr-surface-a0: #ffffff;
+  --clr-surface-a10: #f5f5f5;
+  --clr-surface-a20: #e8e8e8;
+  --clr-surface-a30: #d1d1d1;
+  --clr-surface-a40: #b0b0b0;
+  --clr-surface-a50: #8b8b8b;
+
+  /* Tonal Surface Colors - Light Mode */
+  --clr-surface-tonal-a0: #f8f7fc;
+  --clr-surface-tonal-a10: #efedfa;
+  --clr-surface-tonal-a20: #e3e1f0;
+  --clr-surface-tonal-a30: #d0cee0;
+  --clr-surface-tonal-a40: #b8b6c8;
+  --clr-surface-tonal-a50: #9d9baa;
+
+  /* Semantic Colors (same in both modes) */
+  --clr-success-a0: #22946e;
+  --clr-success-a10: #47d5a6;
+  --clr-success-a20: #9ae8ce;
+
+  --clr-warning-a0: #a87a2a;
+  --clr-warning-a10: #d7ac61;
+  --clr-warning-a20: #ecd7b2;
+
+  --clr-danger-a0: #9c2121;
+  --clr-danger-a10: #d94a4a;
+  --clr-danger-a20: #eb9e9e;
+
+  --clr-info-a0: #21498a;
+  --clr-info-a10: #4077d1;
+  --clr-info-a20: #92b2e5;
+
+  /* Snippet Type Colors (HEX - same in both modes) */
+  --clr-quote: #c1b8fb;
+  --clr-note: #92b2e5;
+  --clr-source: #9ae8ce;
+  --clr-summary: #ecd7b2;
+  --clr-link: #4077d1;
+
+  /* Text Colors - Light Mode */
+  --text-primary: rgba(0, 0, 0, 0.90);
+  --text-secondary: rgba(0, 0, 0, 0.65);
+  --text-tertiary: rgba(0, 0, 0, 0.45);
+  --text-disabled: rgba(0, 0, 0, 0.25);
+
+  /* Spacing Scale */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+
+  /* Typography Scale */
+  --text-xs: 0.75rem;      /* 12px */
+  --text-sm: 0.875rem;     /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg: 1.125rem;     /* 18px */
+  --text-xl: 1.25rem;      /* 20px */
+  --text-2xl: 1.5rem;      /* 24px */
+  --text-3xl: 1.875rem;    /* 30px */
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+
+  /* Icon Sizes */
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+  --icon-xl: 32px;
+
+  /* Touch Targets */
+  --touch-target-min: 44px;
+  --touch-target-comfortable: 48px;
+
+  /* Layout Spacing (Mobile First) */
+  --container-padding: var(--space-4);
+  --card-padding: var(--space-4);
+  --card-gap: var(--space-3);
+  --section-gap: var(--space-8);
+
+  /* Safe Area Insets */
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+
+  /* Animation Timing */
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 350ms;
+  --duration-slower: 500ms;
+
+  /* Easing Functions */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.dark {
+  /* ===================================
+     SHADCN/UI SEMANTIC VARIABLES (DARK MODE)
+     Mapped to Stash It color system
+     =================================== */
+  
+  /* Backgrounds - Your dark surfaces */
+  --background: oklch(14% 0 0); /* #121212 */
+  --foreground: oklch(98% 0 0); /* Near white text */
+  
+  /* Cards - Elevated dark surfaces */
+  --card: oklch(20% 0 0); /* #282828 */
+  --card-foreground: oklch(98% 0 0);
+  
+  /* Popovers */
+  --popover: oklch(20% 0 0);
+  --popover-foreground: oklch(98% 0 0);
+  
+  /* Primary - Your purple, slightly brighter for dark mode */
+  --primary: oklch(68% 0.22 275); /* Lighter purple for dark bg */
+  --primary-foreground: oklch(14% 0 0); /* Dark text on bright purple */
+  
+  /* Secondary - Mid-dark gray */
+  --secondary: oklch(30% 0 0); /* #3f3f3f area */
+  --secondary-foreground: oklch(98% 0 0);
+  
+  /* Muted - Subtle dark backgrounds */
+  --muted: oklch(30% 0 0);
+  --muted-foreground: oklch(70% 0 0); /* Light gray text */
+  
+  /* Accent - Tonal surfaces */
+  --accent: oklch(28% 0.02 275); /* Hint of purple */
+  --accent-foreground: oklch(98% 0 0);
+  
+  /* Destructive - Your danger red, adjusted for dark mode */
+  --destructive: oklch(62% 0.19 25); /* #d94a4a */
+  --destructive-foreground: oklch(98% 0 0);
+  
+  /* Borders & Inputs - Subtle on dark */
+  --border: oklch(100% 0 0 / 10%); /* 10% white */
+  --input: oklch(100% 0 0 / 15%); /* 15% white */
+  --ring: oklch(68% 0.22 275); /* Primary for focus rings */
+  
+  /* Charts - Your specified values */
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  
+  /* Sidebar - Dark mode */
+  --sidebar: oklch(20% 0 0);
+  --sidebar-foreground: oklch(98% 0 0);
+  --sidebar-primary: oklch(68% 0.22 275);
+  --sidebar-primary-foreground: oklch(98% 0 0);
+  --sidebar-accent: oklch(30% 0 0);
+  --sidebar-accent-foreground: oklch(98% 0 0);
+  --sidebar-border: oklch(100% 0 0 / 10%);
+  --sidebar-ring: oklch(68% 0.22 275);
+
+  /* Surface Colors - Dark Mode (your original values) */
+  --clr-surface-a0: #121212;
+  --clr-surface-a10: #282828;
+  --clr-surface-a20: #3f3f3f;
+  --clr-surface-a30: #575757;
+  --clr-surface-a40: #717171;
+  --clr-surface-a50: #8b8b8b;
+
+  /* Tonal Surface Colors - Dark Mode (your original values) */
+  --clr-surface-tonal-a0: #1c1a25;
+  --clr-surface-tonal-a10: #312f39;
+  --clr-surface-tonal-a20: #47454f;
+  --clr-surface-tonal-a30: #5f5d66;
+  --clr-surface-tonal-a40: #78767e;
+  --clr-surface-tonal-a50: #919096;
+
+  /* Text Colors - Dark Mode (your original values) */
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.70);
+  --text-tertiary: rgba(255, 255, 255, 0.50);
+  --text-disabled: rgba(255, 255, 255, 0.30);
+}
+
+/* Responsive Typography Adjustments */
+@media (min-width: 768px) {
+  :root {
+    --text-base: 1.0625rem;  /* 17px */
+    --text-lg: 1.25rem;      /* 20px */
+    --text-xl: 1.5rem;       /* 24px */
+    --text-2xl: 1.875rem;    /* 30px */
+
+    /* Tablet spacing adjustments */
+    --container-padding: var(--space-6);
+    --card-padding: var(--space-5);
+    --card-gap: var(--space-4);
+    --section-gap: var(--space-10);
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* Desktop spacing adjustments */
+    --container-padding: var(--space-8);
+    --card-padding: var(--space-6);
+    --card-gap: var(--space-6);
+    --section-gap: var(--space-12);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Global box-sizing */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* Remove default margins */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  ul,
+  ol,
+  figure,
+  blockquote,
+  dl,
+  dd {
+    margin: 0;
+  }
+
+  /* Improve text rendering */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Make images responsive */
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Remove built-in form typography */
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  /* Avoid text overflow */
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+
+  /* Improve line wrapping */
+  p {
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  /* Focus visible styles */
+  :focus-visible {
+    outline: 2px solid var(--clr-primary-a0);
+    outline-offset: 2px;
+  }
+
+  /* Scrollbar styles (webkit) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--clr-surface-a0);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--clr-surface-a30);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--clr-surface-a40);
+  }
+}
+
+/* Utility Classes */
+@layer utilities {
+  /* Typography utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Safe area utilities */
+  .pt-safe {
+    padding-top: var(--safe-area-top);
+  }
+
+  .pb-safe {
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* Touch target utilities */
+  .touch-target {
+    min-width: var(--touch-target-min);
+    min-height: var(--touch-target-min);
+  }
+
+  .touch-target-comfortable {
+    min-width: var(--touch-target-comfortable);
+    min-height: var(--touch-target-comfortable);
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

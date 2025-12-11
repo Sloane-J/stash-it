@@ -1,8 +1,8 @@
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
-import { requireAuth } from '../middleware/auth'
-import { db } from '../lib/db'
 import { collections, snippetCollections, snippets } from '../../db/schema'
-import { eq, and, desc, sql } from 'drizzle-orm'
+import { db } from '../lib/db'
+import { requireAuth } from '../middleware/auth'
 
 const router = new Hono()
 

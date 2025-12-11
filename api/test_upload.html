@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Image Upload - Stash It</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    input[type="file"] {
+      display: block;
+      margin-bottom: 10px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f3f4f6;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .error {
+      background: #fee;
+      color: #c00;
+    }
+    .success {
+      background: #efe;
+      color: #060;
+    }
+    .preview {
+      margin-top: 10px;
+      max-width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🖼️ Test Image Upload</h1>
+  <p>Upload an image to test ImageKit integration</p>
+  
+  <form id="uploadForm">
+    <div class="form-group">
+      <label>Select Image (max 1.5MB):</label>
+      <input type="file" id="fileInput" accept="image/*" required>
+      <small>Allowed: JPEG, PNG, WebP, GIF</small>
+    </div>
+    
+    <div class="form-group">
+      <label>Snippet ID (optional):</label>
+      <input type="text" id="snippetId" placeholder="Leave empty for standalone upload">
+    </div>
+    
+    <button type="submit">Upload Image</button>
+  </form>
+  
+  <div id="result"></div>
+
+  <script>
+    const resultDiv = document.getElementById('result');
+    
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+      e.preventDefault();
+      
+      resultDiv.textContent = '⏳ Uploading...';
+      resultDiv.className = '';
+      
+      try {
+        const formData = new FormData();
+        const file = document.getElementById('fileInput').files[0];
+        const snippetId = document.getElementById('snippetId').value;
+        
+        formData.append('file', file);
+        if (snippetId) {
+          formData.append('snippetId', snippetId);
+        }
+        
+        const response = await fetch('http://localhost:3000/api/images/upload', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include' // Send cookies for auth
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          resultDiv.className = 'success';
+          resultDiv.innerHTML = `
+✅ Upload successful!
+
+${JSON.stringify(result, null, 2)}
+
+<img src="${result.image.url}" class="preview" alt="Uploaded image">
+<img src="${result.image.thumbnailUrl}" class="preview" alt="Thumbnail">
+          `;
+        } else {
+          resultDiv.className = 'error';
+          resultDiv.textContent = `❌ Upload failed:\n\n${JSON.stringify(result, null, 2)}`;
+        }
+      } catch (error) {
+        resultDiv.className = 'error';
+        resultDiv.textContent = `❌ Error:\n\n${error.message}`;
+      }
+    };
+    
+    // Preview file info when selected
+    document.getElementById('fileInput').onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        console.log(`Selected: ${file.name} (${sizeMB}MB, ${file.type})`);
+      }
+    };
+  </script>
+</body>
+</html>

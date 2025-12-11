@@ -6,6 +6,7 @@ import userRoutes from "./routes/user";
 import snippetRoutes from "./routes/snippets";
 import tagRoutes from "./routes/tags";
 import collectionRoutes from "./routes/collections";
+import imageRoutes from "./routes/images";
 
 const app = new Hono();
 
@@ -38,6 +39,7 @@ app.route("/api", userRoutes);
 app.route("/api/snippets", snippetRoutes);
 app.route("/api/tags", tagRoutes);
 app.route("/api/collections", collectionRoutes);
+app.route('/api/images', imageRoutes); // Add this
 
 // Error handlers
 app.onError((err, c) => {
