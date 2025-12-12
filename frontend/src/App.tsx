@@ -3,10 +3,71 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { LoginPage } from '@/pages/auth/LoginPage';
+import { BottomNav } from '@/components/layout/BottomNav';
 import './App.css';
 
-// Placeholder for main app (we'll build this next)
-function MainApp() {
+// Placeholder pages for each route
+function HomePage() {
+  return (
+    <div className="max-w-2xl mx-auto py-8 space-y-6">
+      <div className="text-center space-y-3">
+        <h1 className="text-3xl font-bold text-foreground">
+          Home
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Snippets will appear here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SearchPage() {
+  return (
+    <div className="max-w-2xl mx-auto py-8 space-y-6">
+      <div className="text-center space-y-3">
+        <h1 className="text-3xl font-bold text-foreground">
+          Search
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Search your snippets
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CreatePage() {
+  return (
+    <div className="max-w-2xl mx-auto py-8 space-y-6">
+      <div className="text-center space-y-3">
+        <h1 className="text-3xl font-bold text-foreground">
+          Create Snippet
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Create form coming soon
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CollectionsPage() {
+  return (
+    <div className="max-w-2xl mx-auto py-8 space-y-6">
+      <div className="text-center space-y-3">
+        <h1 className="text-3xl font-bold text-foreground">
+          Collections
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Your collections will appear here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ProfilePage() {
   const handleSignOut = async () => {
     try {
       await fetch(`${import.meta.env.VITE_API_URL}/api/auth/sign-out`, {
@@ -20,51 +81,41 @@ function MainApp() {
   };
 
   return (
+    <div className="max-w-2xl mx-auto py-8 space-y-6">
+      <div className="text-center space-y-3">
+        <h1 className="text-3xl font-bold text-foreground">
+          Profile
+        </h1>
+        <p className="text-lg text-muted-foreground">
+          Settings and account info
+        </p>
+      </div>
+
+      <div className="text-center mt-8">
+        <button
+          onClick={handleSignOut}
+          className="text-sm text-destructive hover:underline"
+        >
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Main app layout with bottom navigation
+function MainAppLayout({ children }: { children: React.ReactNode }) {
+  return (
     <div className="app">
       <div className="app-layout">
         <main className="main-content">
           <div className="content-wrapper">
-            <div className="max-w-2xl mx-auto py-12 space-y-6">
-              <div className="text-center space-y-3">
-                <h1 className="text-3xl font-bold text-foreground">
-                  Welcome to Stash It!
-                </h1>
-                <p className="text-lg text-muted-foreground">
-                  You're successfully signed in
-                </p>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl p-6 space-y-4">
-                <h2 className="text-xl font-semibold text-foreground">
-                  What's Next?
-                </h2>
-                <ul className="space-y-2 text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-bold">•</span>
-                    <span>We'll build the Bottom Navigation next</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-bold">•</span>
-                    <span>Then create your first snippet card</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-primary font-bold">•</span>
-                    <span>Add search, collections, and more!</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="text-center">
-                <button
-                  onClick={handleSignOut}
-                  className="text-sm text-destructive hover:underline"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
+            {children}
           </div>
         </main>
+        
+        {/* Bottom Navigation - only shows on mobile */}
+        <BottomNav />
       </div>
     </div>
   );
@@ -124,18 +175,64 @@ function App() {
         {/* Auth Routes */}
         <Route path="/auth/login" element={<LoginPage />} />
         
-        {/* Main App Routes (Protected) */}
+        {/* Main App Routes (Protected) - All wrapped in MainAppLayout */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <MainApp />
+              <MainAppLayout>
+                <HomePage />
+              </MainAppLayout>
             </ProtectedRoute>
           }
         />
         
-        {/* Catch all - redirect to login */}
-        <Route path="*" element={<Navigate to="/auth/login" replace />} />
+        <Route
+          path="/search"
+          element={
+            <ProtectedRoute>
+              <MainAppLayout>
+                <SearchPage />
+              </MainAppLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/create"
+          element={
+            <ProtectedRoute>
+              <MainAppLayout>
+                <CreatePage />
+              </MainAppLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/collections"
+          element={
+            <ProtectedRoute>
+              <MainAppLayout>
+                <CollectionsPage />
+              </MainAppLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <MainAppLayout>
+                <ProfilePage />
+              </MainAppLayout>
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Catch all - redirect to home */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
