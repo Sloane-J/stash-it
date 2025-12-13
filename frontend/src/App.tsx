@@ -1,11 +1,11 @@
 // src/App.tsx
 
-import * as reactRouterDom from "react-router-dom";
-import * as BottomNav from "@/components/layout/BottomNav";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useSession } from "@/lib/auth-client";
 import { LoginPage } from "@/pages/auth/LoginPage";
-import * as SplashPage from "@/pages/auth/SplashPage";
+import SplashPage from "@/pages/auth/SplashPage";
 import { CollectionsPage } from "@/pages/CollectionsPage";
 import { CreatePage } from "@/pages/CreatePage";
 import { HomePage } from "@/pages/HomePage";
@@ -25,7 +25,7 @@ function MainAppLayout({ children }: { children: React.ReactNode }) {
 				</main>
 
 				{/* Bottom Navigation - shows on mobile/tablet, hidden on desktop */}
-				<BottomNav.BottomNav />
+				<BottomNav />
 			</div>
 		</div>
 	);
@@ -51,7 +51,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 	// Not authenticated - redirect to splash page
 	if (!session) {
-		return <reactRouterDom.Navigate to="/welcome" replace />;
+		return <Navigate to="/welcome" replace />;
 	}
 
 	// Authenticated - show protected content
@@ -79,7 +79,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 
 	// Already authenticated - redirect to home
 	if (session) {
-		return <reactRouterDom.Navigate to="/" replace />;
+		return <Navigate to="/" replace />;
 	}
 
 	// Not authenticated - show public page
@@ -92,18 +92,18 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 function App() {
 	return (
 		<ThemeProvider defaultTheme="system" storageKey="stash-it-theme">
-			<reactRouterDom.BrowserRouter>
-				<reactRouterDom.Routes>
+			<BrowserRouter>
+				<Routes>
 					{/* Public Routes - Splash & Auth */}
-					<reactRouterDom.Route
+					<Route
 						path="/welcome"
 						element={
 							<PublicRoute>
-								<SplashPage.SplashPage />
+								<SplashPage />
 							</PublicRoute>
 						}
 					/>
-					<reactRouterDom.Route
+					<Route
 						path="/auth/login"
 						element={
 							<PublicRoute>
@@ -113,7 +113,7 @@ function App() {
 					/>
 
 					{/* Main App Routes (Protected) */}
-					<reactRouterDom.Route
+					<Route
 						path="/"
 						element={
 							<ProtectedRoute>
@@ -124,7 +124,7 @@ function App() {
 						}
 					/>
 
-					<reactRouterDom.Route
+					<Route
 						path="/search"
 						element={
 							<ProtectedRoute>
@@ -135,7 +135,7 @@ function App() {
 						}
 					/>
 
-					<reactRouterDom.Route
+					<Route
 						path="/create"
 						element={
 							<ProtectedRoute>
@@ -146,7 +146,7 @@ function App() {
 						}
 					/>
 
-					<reactRouterDom.Route
+					<Route
 						path="/collections"
 						element={
 							<ProtectedRoute>
@@ -157,7 +157,7 @@ function App() {
 						}
 					/>
 
-					<reactRouterDom.Route
+					<Route
 						path="/profile"
 						element={
 							<ProtectedRoute>
@@ -169,12 +169,9 @@ function App() {
 					/>
 
 					{/* Catch all - redirect to welcome (splash) */}
-					<reactRouterDom.Route
-						path="*"
-						element={<reactRouterDom.Navigate to="/welcome" replace />}
-					/>
-				</reactRouterDom.Routes>
-			</reactRouterDom.BrowserRouter>
+					<Route path="*" element={<Navigate to="/welcome" replace />} />
+				</Routes>
+			</BrowserRouter>
 		</ThemeProvider>
 	);
 }
