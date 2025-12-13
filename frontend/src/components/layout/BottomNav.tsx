@@ -19,12 +19,6 @@ const navItems: NavItem[] = [
     path: '/',
   },
   {
-    id: 'search',
-    label: 'Search',
-    icon: Search,
-    path: '/search',
-  },
-  {
     id: 'create',
     label: 'New',
     icon: Plus,
@@ -36,12 +30,6 @@ const navItems: NavItem[] = [
     label: 'Collections',
     icon: FolderOpen,
     path: '/collections',
-  },
-  {
-    id: 'profile',
-    label: 'Me',
-    icon: User,
-    path: '/profile',
   },
 ];
 
