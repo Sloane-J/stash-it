@@ -1,0 +1,95 @@
+/* ===================================
+   TYPE BADGE
+   =================================== */
+
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out);
+  border: 1px solid transparent;
+}
+
+/* Icon sizing */
+.type-badge-icon {
+  flex-shrink: 0;
+}
+
+.type-badge-label {
+  letter-spacing: 0.5px;
+}
+
+/* ===================================
+   SIZE VARIANTS
+   =================================== */
+
+.type-badge-sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: 0.625rem; /* 10px */
+}
+
+.type-badge-sm .type-badge-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.type-badge-md {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.type-badge-md .type-badge-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.type-badge-lg {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.type-badge-lg .type-badge-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ===================================
+   HOVER STATE
+   =================================== */
+
+.type-badge:hover {
+  border-color: var(--badge-color);
+  background-color: color-mix(in srgb, var(--badge-color) 25%, transparent) !important;
+}
+
+/* ===================================
+   DARK MODE
+   =================================== */
+
+.dark .type-badge {
+  /* Color-mix works the same in dark mode */
+  /* The custom properties (--clr-quote, etc) handle the contrast */
+}
+
+/* ===================================
+   ACCESSIBILITY
+   =================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .type-badge {
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .type-badge {
+    border: 1px solid var(--badge-color);
+    font-weight: var(--font-bold);
+  }
+}

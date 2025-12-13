@@ -1,0 +1,186 @@
+/* ===================================
+   ACTIONS MENU (Dropdown)
+   =================================== */
+
+.snippet-actions-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: 100;
+  min-width: 200px;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  animation: slideDown var(--duration-fast) var(--ease-out);
+}
+
+.dark .snippet-actions-menu {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===================================
+   MENU ITEMS
+   =================================== */
+
+.snippet-actions-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  text-align: left;
+}
+
+.snippet-actions-item:hover {
+  background: var(--muted);
+  color: var(--text-primary);
+}
+
+.snippet-actions-item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+/* Icon */
+.snippet-actions-item svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.snippet-actions-item:hover svg {
+  color: var(--text-primary);
+}
+
+/* Danger variant (delete) */
+.snippet-actions-item-danger {
+  color: var(--destructive);
+}
+
+.snippet-actions-item-danger:hover {
+  background: color-mix(in srgb, var(--destructive) 10%, transparent);
+  color: var(--destructive);
+}
+
+.snippet-actions-item-danger svg {
+  color: var(--destructive);
+}
+
+/* ===================================
+   DIVIDER
+   =================================== */
+
+.snippet-actions-divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-2) 0;
+}
+
+/* ===================================
+   DELETE CONFIRMATION
+   =================================== */
+
+.snippet-actions-confirm {
+  padding: var(--space-4);
+}
+
+.snippet-actions-confirm-text {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-3) 0;
+  text-align: center;
+}
+
+.snippet-actions-confirm-buttons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.snippet-actions-confirm-button {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.snippet-actions-confirm-cancel {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.snippet-actions-confirm-cancel:hover {
+  background: var(--clr-surface-a30);
+}
+
+.snippet-actions-confirm-delete {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
+.snippet-actions-confirm-delete:hover {
+  background: var(--clr-danger-a0);
+}
+
+/* ===================================
+   MOBILE ADJUSTMENTS
+   =================================== */
+
+@media (max-width: 640px) {
+  .snippet-actions-menu {
+    /* On mobile, align to right edge with padding */
+    right: var(--space-2);
+    left: var(--space-2);
+    min-width: unset;
+  }
+}
+
+/* ===================================
+   ACCESSIBILITY
+   =================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .snippet-actions-menu {
+    animation: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .snippet-actions-menu {
+    border-width: 2px;
+  }
+
+  .snippet-actions-item {
+    border: 1px solid transparent;
+  }
+
+  .snippet-actions-item:hover {
+    border-color: var(--border);
+  }
+}
