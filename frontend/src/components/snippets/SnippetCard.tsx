@@ -6,10 +6,12 @@ import type { SnippetWithTags } from "@/types/snippet-ui.types";
 import { TypeBadge } from "./TypeBadge";
 import { SnippetActions } from "./SnippetActions";
 import { formatDistanceToNow } from "date-fns";
+import { getAccentBarStyle } from "@/lib/snippetColors";
 import './SnippetCard.css';
 
 interface SnippetCardProps {
   snippet: SnippetWithTags;
+  layout?: 'stack' | 'grid'; // Layout mode prop for future grid view
   onEdit?: (snippet: SnippetWithTags) => void;
   onDelete?: (snippetId: string) => void;
   onAddToCollection?: (snippetId: string) => void;
@@ -18,6 +20,7 @@ interface SnippetCardProps {
 
 export function SnippetCard({
   snippet,
+  layout = 'stack', // Default to stack view
   onEdit,
   onDelete,
   onAddToCollection,
@@ -30,12 +33,6 @@ export function SnippetCard({
   const timeAgo = formatDistanceToNow(new Date(snippet.createdAt), {
     addSuffix: true,
   });
-
-  // Truncate content to 4 lines (approx 160 chars)
-  const truncatedContent =
-    snippet.content.length > 160
-      ? snippet.content.substring(0, 160) + "..."
-      : snippet.content;
 
   // Get first 3 tags
   const visibleTags = snippet.tags?.slice(0, 3) || [];
@@ -84,13 +81,20 @@ export function SnippetCard({
 
   return (
     <article
-      className="snippet-card group"
+      className={`snippet-card snippet-card--${layout} group`}
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && handleCardClick(e as any)}
-      aria-label={`${snippet.type} snippet: ${truncatedContent}`}
+      aria-label={`${snippet.type} snippet`}
     >
+      {/* Colored accent bar on right edge */}
+      <div 
+        className="snippet-card-accent-bar"
+        style={getAccentBarStyle(snippet.type, 0.8)}
+        aria-hidden="true"
+      />
+
       {/* Header */}
       <div className="snippet-card-header">
         <div className="snippet-card-header-left">
@@ -126,17 +130,22 @@ export function SnippetCard({
         )}
       </div>
 
+      {/* Content with truncation */}
+      <div 
+        className={`snippet-card-content snippet-card-content--${layout}`}
+        data-type={snippet.type}
+      >
+        <p className="snippet-card-text">{snippet.content}</p>
+      </div>
+
       {/* Image preview (if exists) */}
       {imageUrl && (
-        <div className="snippet-card-image">
+        <div className={`snippet-card-image snippet-card-image--${layout}`}>
           <img src={imageUrl} alt="" loading="lazy" />
+          {/* Dark gradient overlay */}
+          <div className="snippet-card-image-overlay" />
         </div>
       )}
-
-      {/* Content */}
-      <div className="snippet-card-content">
-        <p>{truncatedContent}</p>
-      </div>
 
       {/* Tags */}
       {visibleTags.length > 0 && (

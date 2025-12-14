@@ -11,6 +11,7 @@ import { CreatePage } from "@/pages/CreatePage";
 import { HomePage } from "@/pages/HomePage";
 import { ProfilePage } from "@/pages/ProfilePage";
 import { SearchPage } from "@/pages/SearchPage";
+import { SnippetDetailPage } from "@/pages/SnippetDetailPage";
 import "./App.css";
 
 // ===================================
@@ -91,88 +92,94 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 // ===================================
 function App() {
 	return (
-		<ThemeProvider defaultTheme="system" storageKey="stash-it-theme">
-			<BrowserRouter>
-				<Routes>
-					{/* Public Routes - Splash & Auth */}
-					<Route
-						path="/welcome"
-						element={
-							<PublicRoute>
-								<SplashPage />
-							</PublicRoute>
-						}
-					/>
-					<Route
-						path="/auth/login"
-						element={
-							<PublicRoute>
-								<LoginPage />
-							</PublicRoute>
-						}
-					/>
+	<ThemeProvider defaultTheme="system" storageKey="stash-it-theme">
+  <BrowserRouter>
+    <Routes>
+      {/* Public Routes - Splash & Auth */}
+      <Route
+        path="/welcome"
+        element={
+          <PublicRoute>
+            <SplashPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/auth/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
 
-					{/* Main App Routes (Protected) */}
-					<Route
-						path="/"
-						element={
-							<ProtectedRoute>
-								<MainAppLayout>
-									<HomePage />
-								</MainAppLayout>
-							</ProtectedRoute>
-						}
-					/>
+      {/* Main App Routes (Protected) */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <MainAppLayout>
+              <HomePage />
+            </MainAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/search"
+        element={
+          <ProtectedRoute>
+            <MainAppLayout>
+              <SearchPage />
+            </MainAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/create"
+        element={
+          <ProtectedRoute>
+            <MainAppLayout>
+              <CreatePage />
+            </MainAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/collections"
+        element={
+          <ProtectedRoute>
+            <MainAppLayout>
+              <CollectionsPage />
+            </MainAppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <MainAppLayout>
+              <ProfilePage />
+            </MainAppLayout>
+          </ProtectedRoute>
+        }
+      />
 
-					<Route
-						path="/search"
-						element={
-							<ProtectedRoute>
-								<MainAppLayout>
-									<SearchPage />
-								</MainAppLayout>
-							</ProtectedRoute>
-						}
-					/>
+      {/* Snippet Detail Page - NO MainAppLayout (no bottom nav) */}
+      <Route
+        path="/snippets/:id"
+        element={
+          <ProtectedRoute>
+            <SnippetDetailPage />
+          </ProtectedRoute>
+        }
+      />
 
-					<Route
-						path="/create"
-						element={
-							<ProtectedRoute>
-								<MainAppLayout>
-									<CreatePage />
-								</MainAppLayout>
-							</ProtectedRoute>
-						}
-					/>
-
-					<Route
-						path="/collections"
-						element={
-							<ProtectedRoute>
-								<MainAppLayout>
-									<CollectionsPage />
-								</MainAppLayout>
-							</ProtectedRoute>
-						}
-					/>
-
-					<Route
-						path="/profile"
-						element={
-							<ProtectedRoute>
-								<MainAppLayout>
-									<ProfilePage />
-								</MainAppLayout>
-							</ProtectedRoute>
-						}
-					/>
-
-					{/* Catch all - redirect to welcome (splash) */}
-					<Route path="*" element={<Navigate to="/welcome" replace />} />
-				</Routes>
-			</BrowserRouter>
-		</ThemeProvider>
+      {/* Catch all - redirect to welcome (splash) */}
+      <Route path="*" element={<Navigate to="/welcome" replace />} />
+    </Routes>
+  </BrowserRouter>
+</ThemeProvider>
 	);
 }
 

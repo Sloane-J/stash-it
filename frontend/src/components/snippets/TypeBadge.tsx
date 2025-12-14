@@ -1,5 +1,7 @@
+// src/components/snippets/TypeBadge.tsx
 import { Book, FileText, Link, List, Quote } from "lucide-react";
 import { SNIPPET_TYPES, type SnippetType } from "@/types/snippet";
+import { getSnippetAccent } from "@/lib/snippetColors";
 import "./TypeBadge.css";
 
 interface TypeBadgeProps {
@@ -23,6 +25,9 @@ export function TypeBadge({
 }: TypeBadgeProps) {
   const typeInfo = SNIPPET_TYPES[type];
   const Icon = ICON_MAP[type];
+  
+  // Get color from unified color system
+  const accentColor = getSnippetAccent(type);
 
   // Size classes
   const sizeClasses = {
@@ -32,13 +37,14 @@ export function TypeBadge({
   };
 
   return (
-    <span
+    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: <explanation>
+<span
       className={`type-badge ${sizeClasses[size]}`}
       style={
         {
-          "--badge-color": typeInfo.color,
-          backgroundColor: `color-mix(in srgb, ${typeInfo.color} 15%, transparent)`,
-          color: typeInfo.color,
+          "--badge-color": accentColor,
+          backgroundColor: `color-mix(in srgb, ${accentColor} 15%, transparent)`,
+          color: accentColor,
         } as React.CSSProperties
       }
       aria-label={`${typeInfo.label} snippet`}

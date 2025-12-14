@@ -1,0 +1,27 @@
+/* Snippet grid layouts */
+.snippet-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Stack layout (default) - single column */
+.snippet-grid--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Grid layout - 2 cards per row */
+.snippet-grid--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Mobile: Force single column for grid view */
+@media (max-width: 640px) {
+  .snippet-grid--grid {
+    grid-template-columns: 1fr;
+  }
+}

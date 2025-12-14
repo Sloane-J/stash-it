@@ -1,5 +1,7 @@
+// src/components/layout/BottomNav.tsx
+
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Search, Plus, FolderOpen, User } from 'lucide-react';
+import { Home, Plus, FolderOpen } from 'lucide-react';
 
 // Navigation item type
 interface NavItem {
@@ -51,61 +53,69 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="bottom-nav">
-      <div className="flex items-center justify-around h-16 px-2">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.path);
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
+      {/* Background with backdrop blur */}
+      <div className="bg-card/95 backdrop-blur-lg border-t border-border">
+        {/* Safe area padding for bottom notch/home indicator */}
+        <div 
+          className="flex items-center justify-around h-16 px-2"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleNavClick(item.path)}
-              className={`
-                flex flex-col items-center justify-center
-                gap-1 px-3 py-2 rounded-lg
-                touch-target transition-colors
-                ${active ? 'text-primary' : 'text-muted-foreground'}
-                ${!item.isSpecial && 'hover:text-foreground'}
-                ${item.isSpecial && 'relative -mt-4'}
-              `}
-              aria-label={item.label}
-              aria-current={active ? 'page' : undefined}
-            >
-              {/* Special styling for Create button */}
-              {item.isSpecial ? (
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`
-                      flex items-center justify-center
-                      w-14 h-14 rounded-full
-                      bg-primary text-primary-foreground
-                      shadow-lg hover:shadow-xl
-                      transition-all hover:scale-105 active:scale-95
-                    `}
-                  >
-                    <Icon className="w-6 h-6" strokeWidth={2.5} />
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleNavClick(item.path)}
+                className={`
+                  flex flex-col items-center justify-center
+                  gap-1 px-3 py-2 rounded-lg
+                  min-w-[44px] min-h-[44px]
+                  transition-colors
+                  ${active ? 'text-primary' : 'text-muted-foreground'}
+                  ${!item.isSpecial && 'hover:text-foreground'}
+                  ${item.isSpecial && 'relative -mt-4'}
+                `}
+                aria-label={item.label}
+                aria-current={active ? 'page' : undefined}
+              >
+                {/* Special styling for Create button */}
+                {item.isSpecial ? (
+                  <div className="flex flex-col items-center">
+                    <div
+                      className="
+                        flex items-center justify-center
+                        w-14 h-14 rounded-full
+                        bg-primary text-primary-foreground
+                        shadow-lg hover:shadow-xl
+                        transition-all hover:scale-105 active:scale-95
+                      "
+                    >
+                      <Icon className="w-6 h-6" strokeWidth={2.5} />
+                    </div>
+                    <span className="text-xs font-medium mt-1">
+                      {item.label}
+                    </span>
                   </div>
-                  <span className="text-xs font-medium mt-1">
-                    {item.label}
-                  </span>
-                </div>
-              ) : (
-                // Regular nav items
-                <>
-                  <Icon
-                    className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-2'}`}
-                  />
-                  <span
-                    className={`text-xs ${active ? 'font-semibold' : 'font-medium'}`}
-                  >
-                    {item.label}
-                  </span>
-                </>
-              )}
-            </button>
-          );
-        })}
+                ) : (
+                  // Regular nav items
+                  <>
+                    <Icon
+                      className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-2'}`}
+                    />
+                    <span
+                      className={`text-xs ${active ? 'font-semibold' : 'font-medium'}`}
+                    >
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
