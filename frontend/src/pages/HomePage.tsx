@@ -5,6 +5,7 @@ import { useState } from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EmptyState } from "@/components/common/EmptyState";
 import { SnippetCard } from "@/components/snippets/SnippetCard";
+import { RecentSnippets } from "@/components/snippets/RecentSnippets";
 import { useSnippets } from "@/hooks/useSnippets";
 import "./HomePage.css";
 
@@ -15,8 +16,8 @@ type SnippetIdOnly = {
 export function HomePage() {
   const navigate = useNavigate();
   const { snippets = [], isLoading, error, deleteSnippet } = useSnippets();
-  
-  // Layout state - moved to top before any returns
+
+  // Layout state
   const [layout, setLayout] = useState<"stack" | "grid">("stack");
 
   const handleCreateSnippet = () => {
@@ -101,23 +102,16 @@ export function HomePage() {
     );
   }
 
-  // Normal state with snippets
+  // Normal state
   return (
     <>
       <PageHeader layout={layout} onLayoutChange={setLayout} />
       <div className="max-w-5xl mx-auto py-6 space-y-6">
-        {/* Page Title */}
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Your Snippets
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {snippets.length}{" "}
-            {snippets.length === 1 ? "snippet" : "snippets"}
-          </p>
-        </div>
+       
+        {/* Recent snippets carousel */}
+        <RecentSnippets snippets={snippets} />
 
-        {/* Snippets Grid/Stack */}
+        {/* Main snippets grid */}
         <div className={`snippet-grid snippet-grid--${layout}`}>
           {snippets.map((snippet) => (
             <SnippetCard

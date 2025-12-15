@@ -1,26 +1,43 @@
 // src/components/snippets/SnippetCard.tsx
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clock, MoreVertical } from "lucide-react";
+import {
+  Clock,
+  MoreVertical,
+  Book,
+  FileText,
+  Link as LinkIcon,
+  List,
+  Quote,
+} from "lucide-react";
 import type { SnippetWithTags } from "@/types/snippet-ui.types";
-import { TypeBadge } from "./TypeBadge";
+import type { LucideIcon } from "lucide-react";
 import { SnippetActions } from "./SnippetActions";
 import { formatDistanceToNow } from "date-fns";
-import { getAccentBarStyle } from "@/lib/snippetColors";
-import './SnippetCard.css';
+import { getAccentBarStyle, getSnippetAccent } from "@/lib/snippetColors";
+import { getSnippetImageUrl } from "@/lib/defaultImages";
+import "./SnippetCard.css";
 
 interface SnippetCardProps {
   snippet: SnippetWithTags;
-  layout?: 'stack' | 'grid'; // Layout mode prop for future grid view
   onEdit?: (snippet: SnippetWithTags) => void;
   onDelete?: (snippetId: string) => void;
   onAddToCollection?: (snippetId: string) => void;
   onDuplicate?: (snippet: SnippetWithTags) => void;
 }
 
+// Strongly typed icon map
+const TYPE_ICONS: Record<SnippetWithTags["type"], LucideIcon> = {
+  note: FileText,
+  quote: Quote,
+  source: Book,
+  summary: List,
+  link: LinkIcon,
+};
+
 export function SnippetCard({
   snippet,
-  layout = 'stack', // Default to stack view
   onEdit,
   onDelete,
   onAddToCollection,
@@ -29,32 +46,33 @@ export function SnippetCard({
   const navigate = useNavigate();
   const [showActions, setShowActions] = useState(false);
 
-  // Format timestamp
+  const TypeIcon = TYPE_ICONS[snippet.type];
+  const typeColor = getSnippetAccent(snippet.type);
+
+  const imageUrl = getSnippetImageUrl(snippet.metadata, snippet.type);
+
   const timeAgo = formatDistanceToNow(new Date(snippet.createdAt), {
     addSuffix: true,
   });
 
-  // Get first 3 tags
-  const visibleTags = snippet.tags?.slice(0, 3) || [];
-  const remainingTags = (snippet.tags?.length || 0) - 3;
+  const visibleTags = snippet.tags?.slice(0, 2) || [];
+  const remainingTags = Math.max((snippet.tags?.length || 0) - 2, 0);
 
-  // Extract image from metadata if exists
-  const imageUrl = snippet.metadata?.favicon;
-
-  // Get metadata display text
   const getMetadataText = () => {
     const meta = snippet.metadata;
     if (!meta) return null;
 
     switch (snippet.type) {
       case "quote":
-        return meta.source && meta.page
-          ? `${meta.source} • Page ${meta.page}`
-          : meta.source || null;
+        return meta.source || null;
       case "source":
-        return meta.author || meta.citation || null;
+        return meta.author || null;
       case "link":
-        return meta.url ? new URL(meta.url).hostname : null;
+        try {
+          return meta.url ? new URL(meta.url).hostname : null;
+        } catch {
+          return null;
+        }
       case "summary":
         return meta.summarizedFrom || null;
       default:
@@ -64,16 +82,17 @@ export function SnippetCard({
 
   const metadataText = getMetadataText();
 
-  // Handle card click (navigate to detail view)
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking actions menu or tags
-    if ((e.target as HTMLElement).closest(".snippet-actions, .snippet-tags")) {
+    if (
+      (e.target as HTMLElement).closest(
+        ".snippet-actions-trigger, .snippet-actions, .snippet-tags"
+      )
+    ) {
       return;
     }
     navigate(`/snippets/${snippet.id}`);
   };
 
-  // Handle tag click
   const handleTagClick = (e: React.MouseEvent, tagId: string) => {
     e.stopPropagation();
     navigate(`/tags/${tagId}`);
@@ -81,103 +100,107 @@ export function SnippetCard({
 
   return (
     <article
-      className={`snippet-card snippet-card--${layout} group`}
+      className="snippet-card-rectangle group"
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && handleCardClick(e as any)}
       aria-label={`${snippet.type} snippet`}
     >
-      {/* Colored accent bar on right edge */}
-      <div 
+      {/* Accent bar */}
+      <div
         className="snippet-card-accent-bar"
         style={getAccentBarStyle(snippet.type, 0.8)}
         aria-hidden="true"
       />
 
-      {/* Header */}
-      <div className="snippet-card-header">
-        <div className="snippet-card-header-left">
-          <TypeBadge type={snippet.type} />
-          <span className="snippet-timestamp">
-            <Clock className="w-3.5 h-3.5" />
-            {timeAgo}
-          </span>
-        </div>
-
-        <button
-          className="snippet-actions-trigger"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowActions(!showActions);
-          }}
-          aria-label="Snippet actions"
-          aria-expanded={showActions}
-        >
-          <MoreVertical className="w-5 h-5" />
-        </button>
-
-        {/* Actions dropdown */}
-        {showActions && (
-          <SnippetActions
-            snippet={snippet}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onAddToCollection={onAddToCollection}
-            onDuplicate={onDuplicate}
-            onClose={() => setShowActions(false)}
-          />
-        )}
-      </div>
-
-      {/* Content with truncation */}
-      <div 
-        className={`snippet-card-content snippet-card-content--${layout}`}
-        data-type={snippet.type}
-      >
-        <p className="snippet-card-text">{snippet.content}</p>
-      </div>
-
-      {/* Image preview (if exists) */}
+      {/* Image */}
       {imageUrl && (
-        <div className={`snippet-card-image snippet-card-image--${layout}`}>
+        <div className="snippet-card-image-square">
           <img src={imageUrl} alt="" loading="lazy" />
-          {/* Dark gradient overlay */}
-          <div className="snippet-card-image-overlay" />
         </div>
       )}
 
-      {/* Tags */}
-      {visibleTags.length > 0 && (
-        <div className="snippet-tags snippet-card-tags">
-          {visibleTags.map((tag) => (
-            <span
-              key={tag.id}
-              className="snippet-tag"
-              onClick={(e) => handleTagClick(e, tag.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleTagClick(e as any, tag.id);
-                }
-              }}
-            >
-              #{tag.name}
+      {/* Body */}
+      <div className="snippet-card-body">
+        {/* Header */}
+        <div className="snippet-card-header">
+          <div className="snippet-card-header-left">
+            <TypeIcon
+              className="snippet-type-icon"
+              size={18}
+              style={{ color: typeColor }}
+            />
+
+            <span className="snippet-timestamp">
+              <Clock className="w-3 h-3" />
+              {timeAgo}
             </span>
-          ))}
-          {remainingTags > 0 && (
-            <span className="snippet-tag-more">+{remainingTags} more</span>
+
+            {metadataText && (
+              <>
+                <span className="metadata-separator">•</span>
+                <span className="snippet-metadata-inline">
+                  {metadataText}
+                </span>
+              </>
+            )}
+          </div>
+
+          <button
+            className="snippet-actions-trigger"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowActions((v) => !v);
+            }}
+            aria-label="Snippet actions"
+            aria-expanded={showActions}
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+
+          {showActions && (
+            <SnippetActions
+              snippet={snippet}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onAddToCollection={onAddToCollection}
+              onDuplicate={onDuplicate}
+              onClose={() => setShowActions(false)}
+            />
           )}
         </div>
-      )}
 
-      {/* Metadata footer */}
-      {metadataText && (
-        <div className="snippet-card-footer">
-          <p className="snippet-metadata">{metadataText}</p>
+        {/* Content */}
+        <div className="snippet-card-content">
+          <p className="snippet-card-text">{snippet.content}</p>
         </div>
-      )}
+
+        {/* Tags */}
+        {visibleTags.length > 0 && (
+          <div className="snippet-tags snippet-card-tags">
+            {visibleTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="snippet-tag"
+                onClick={(e) => handleTagClick(e, tag.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleTagClick(e as any, tag.id);
+                  }
+                }}
+              >
+                #{tag.name}
+              </span>
+            ))}
+            {remainingTags > 0 && (
+              <span className="snippet-tag-more">+{remainingTags}</span>
+            )}
+          </div>
+        )}
+      </div>
     </article>
   );
 }

@@ -87,6 +87,20 @@
   color: var(--destructive);
 }
 
+.snippet-actions-trigger {
+  position: relative;
+  z-index: 10;
+}
+
+/* Force dropdown to appear */
+.snippet-actions {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 50;
+  margin-top: 4px;
+}
+
 /* ===================================
    DIVIDER
    =================================== */
