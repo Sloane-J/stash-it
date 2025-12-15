@@ -1,18 +1,82 @@
 // src/pages/SnippetDetailPage.tsx
 
-import { ChevronLeft, Heart, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import type { SnippetWithTags } from "@/types/snippet-ui.types";
+import { ChevronLeft, Heart, MoreHorizontal, Edit, Trash2, Copy, Share2, FolderPlus } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import "./SnippetDetailPage.css";
 
 export function SnippetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
   const [snippet, setSnippet] = useState<SnippetWithTags | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  
+  const optionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (optionsMenuRef.current && !optionsMenuRef.current.contains(event.target as Node)) {
+        setShowOptionsMenu(false);
+      }
+    };
+
+    if (showOptionsMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showOptionsMenu]);
+
+  // Handler functions
+  const handleDelete = async () => {
+    setShowOptionsMenu(false);
+    if (!window.confirm("Delete this snippet?")) return;
+    
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/snippets/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      
+      if (res.ok) {
+        navigate("/");
+      }
+    } catch (err) {
+      alert("Failed to delete");
+    }
+  };
+
+  const handleEdit = () => {
+    setShowOptionsMenu(false);
+    setIsEditing(true);
+    // TODO: Implement inline editing
+  };
+
+  const handleAddToCollection = () => {
+    setShowOptionsMenu(false);
+    // TODO: Open collection modal
+    alert("Add to collection feature coming soon!");
+  };
+
+  const handleDuplicate = () => {
+    setShowOptionsMenu(false);
+    alert("Duplicate feature coming soon!");
+  };
+
+  const handleShare = () => {
+    setShowOptionsMenu(false);
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link copied!");
+  };
 
   // Fetch snippet data
   useEffect(() => {
@@ -26,11 +90,12 @@ export function SnippetDetailPage() {
       try {
         setIsLoading(true);
         setError(null);
+
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/api/snippets/${id}`,
           {
             credentials: "include",
-          },
+          }
         );
 
         if (!response.ok) {
@@ -93,12 +158,6 @@ export function SnippetDetailPage() {
   const handleToggleFavorite = () => {
     setIsFavorite(!isFavorite);
     // TODO: API call to update favorite status
-  };
-
-  // Handle add to collection
-  const handleAddToCollection = () => {
-    // TODO: Open collection modal
-    console.log("Add to collection clicked");
   };
 
   // Format date helper
@@ -263,14 +322,43 @@ export function SnippetDetailPage() {
                 <ChevronLeft size={24} />
               </button>
 
-              {/* Add to Collection - Top Right */}
-              <button
-                className="icon-button icon-button-add"
-                onClick={handleAddToCollection}
-                aria-label="Add to collection"
-              >
-                <Plus size={24} />
-              </button>
+              {/* Options Menu - Top Right */}
+              <div className="options-menu-container" ref={optionsMenuRef}>
+                <button
+                  className="icon-button icon-button-options"
+                  onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                  aria-label="More options"
+                >
+                  <MoreHorizontal size={24} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showOptionsMenu && (
+                  <div className="options-dropdown">
+                    <button className="dropdown-item" onClick={handleEdit}>
+                      <Edit size={18} />
+                      <span>Edit</span>
+                    </button>
+                    <button className="dropdown-item" onClick={handleAddToCollection}>
+                      <FolderPlus size={18} />
+                      <span>Add to Collection</span>
+                    </button>
+                    <button className="dropdown-item" onClick={handleDuplicate}>
+                      <Copy size={18} />
+                      <span>Duplicate</span>
+                    </button>
+                    <button className="dropdown-item" onClick={handleShare}>
+                      <Share2 size={18} />
+                      <span>Share</span>
+                    </button>
+                    <div className="dropdown-divider" />
+                    <button className="dropdown-item dropdown-item--danger" onClick={handleDelete}>
+                      <Trash2 size={18} />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Favorite Button - Bottom Right */}
               <button
@@ -300,17 +388,45 @@ export function SnippetDetailPage() {
                 <ChevronLeft size={24} />
               </button>
 
-              {/* Add to Collection */}
-              <button
-                className="icon-button icon-button-add"
-                onClick={handleAddToCollection}
-                aria-label="Add to collection"
-              >
-                <Plus size={24} />
-              </button>
+              {/* Options Menu */}
+              <div className="options-menu-container" ref={optionsMenuRef}>
+                <button
+                  className="icon-button icon-button-options"
+                  onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                  aria-label="More options"
+                >
+                  <MoreHorizontal size={24} />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showOptionsMenu && (
+                  <div className="options-dropdown">
+                    <button className="dropdown-item" onClick={handleEdit}>
+                      <Edit size={18} />
+                      <span>Edit</span>
+                    </button>
+                    <button className="dropdown-item" onClick={handleAddToCollection}>
+                      <FolderPlus size={18} />
+                      <span>Add to Collection</span>
+                    </button>
+                    <button className="dropdown-item" onClick={handleDuplicate}>
+                      <Copy size={18} />
+                      <span>Duplicate</span>
+                    </button>
+                    <button className="dropdown-item" onClick={handleShare}>
+                      <Share2 size={18} />
+                      <span>Share</span>
+                    </button>
+                    <div className="dropdown-divider" />
+                    <button className="dropdown-item dropdown-item--danger" onClick={handleDelete}>
+                      <Trash2 size={18} />
+                      <span>Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Favorite Button */}
-              {/** biome-ignore lint/a11y/useButtonType: <explanation> */}
               <button
                 className={`icon-button icon-button-favorite ${isFavorite ? "is-favorite" : ""}`}
                 onClick={handleToggleFavorite}
@@ -378,7 +494,6 @@ export function SnippetDetailPage() {
         </div>
 
         {/* SECTION 4: Tags */}
-        {/* SECTION 4: Tags */}
         <div className="snippet-detail-tags">
           <h3 className="tags-heading">Tags</h3>
           <div className="tags-list">
@@ -393,11 +508,6 @@ export function SnippetDetailPage() {
             ))}
             <button className="tag-add-button">+ Add Tag</button>
           </div>
-        </div>
-
-        {/* SECTION 5: Actions */}
-        <div className="snippet-detail-actions">
-          <p>Actions Section - Coming in Step 6</p>
         </div>
       </div>
     </div>
