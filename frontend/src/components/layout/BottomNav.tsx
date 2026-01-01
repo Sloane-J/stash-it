@@ -1,122 +1,84 @@
-// src/components/layout/BottomNav.tsx
+import { FolderOpen, Home, Plus } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Plus, FolderOpen } from 'lucide-react';
-
-// Navigation item type
 interface NavItem {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  path: string;
-  isSpecial?: boolean; // For the center "Create" button
+	id: string;
+	label: string;
+	icon: React.ComponentType<{ className?: string }>;
+	path: string;
+	isSpecial?: boolean;
 }
 
-// Navigation items configuration
 const navItems: NavItem[] = [
-  {
-    id: 'home',
-    label: 'Home',
-    icon: Home,
-    path: '/',
-  },
-  {
-    id: 'create',
-    label: 'New',
-    icon: Plus,
-    path: '/create',
-    isSpecial: true,
-  },
-  {
-    id: 'collections',
-    label: 'Collections',
-    icon: FolderOpen,
-    path: '/collections',
-  },
+	{ id: "home", label: "Home", icon: Home, path: "/" },
+	{
+		id: "create",
+		label: "Create",
+		icon: Plus,
+		path: "/create",
+		isSpecial: true,
+	},
+	{
+		id: "collections",
+		label: "Collections",
+		icon: FolderOpen,
+		path: "/collections",
+	},
 ];
 
 export function BottomNav() {
-  const navigate = useNavigate();
-  const location = useLocation();
+	const navigate = useNavigate();
+	const location = useLocation();
 
-  // Check if a nav item is active
-  const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
-    return location.pathname.startsWith(path);
-  };
+	const isActive = (path: string) => {
+		return path === "/"
+			? location.pathname === "/"
+			: location.pathname.startsWith(path);
+	};
 
-  // Handle navigation
-  const handleNavClick = (path: string) => {
-    navigate(path);
-  };
+	return (
+		<nav className="sticky bottom-0 left-0 right-0 z-50 md:hidden bg-background border-t border-border">
+			{/* Sticky Bottom Nav Bar */}
+			<div className="flex items-center justify-between w-full h-16 px-4 max-w-md mx-auto">
+				{navItems.map((item) => {
+					const Icon = item.icon;
+					const active = isActive(item.path);
 
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
-      {/* Background with backdrop blur */}
-      <div className="bg-card/95 backdrop-blur-lg border-t border-border">
-        {/* Safe area padding for bottom notch/home indicator */}
-        <div 
-          className="flex items-center justify-around h-16 px-2"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-        >
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.path);
+					if (item.isSpecial) {
+						return (
+							<button
+								key={item.id}
+								onClick={() => navigate(item.path)}
+								className="relative flex items-center justify-center -translate-y-2"
+								aria-label={item.label}
+							>
+								<div className="relative flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-90">
+									<Icon className="w-7 h-7" strokeWidth={2.5} />
+								</div>
+							</button>
+						);
+					}
 
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleNavClick(item.path)}
-                className={`
-                  flex flex-col items-center justify-center
-                  gap-1 px-3 py-2 rounded-lg
-                  min-w-[44px] min-h-[44px]
-                  transition-colors
-                  ${active ? 'text-primary' : 'text-muted-foreground'}
-                  ${!item.isSpecial && 'hover:text-foreground'}
-                  ${item.isSpecial && 'relative -mt-4'}
-                `}
-                aria-label={item.label}
-                aria-current={active ? 'page' : undefined}
-              >
-                {/* Special styling for Create button */}
-                {item.isSpecial ? (
-                  <div className="flex flex-col items-center">
-                    <div
-                      className="
-                        flex items-center justify-center
-                        w-14 h-14 rounded-full
-                        bg-primary text-primary-foreground
-                        shadow-lg hover:shadow-xl
-                        transition-all hover:scale-105 active:scale-95
-                      "
-                    >
-                      <Icon className="w-6 h-6" strokeWidth={2.5} />
-                    </div>
-                    <span className="text-xs font-medium mt-1">
-                      {item.label}
-                    </span>
-                  </div>
-                ) : (
-                  // Regular nav items
-                  <>
-                    <Icon
-                      className={`w-5 h-5 ${active ? 'stroke-[2.5]' : 'stroke-2'}`}
-                    />
-                    <span
-                      className={`text-xs ${active ? 'font-semibold' : 'font-medium'}`}
-                    >
-                      {item.label}
-                    </span>
-                  </>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </nav>
-  );
+					return (
+						<button
+							key={item.id}
+							onClick={() => navigate(item.path)}
+							className="relative flex flex-col items-center justify-center gap-1 min-w-[64px] h-full transition-all duration-300 active:scale-95"
+							aria-label={item.label}
+						>
+							<Icon
+								className={`w-6 h-6 transition-colors ${active ? "text-primary" : "text-muted-foreground"}`}
+								strokeWidth={active ? 2.5 : 2}
+							/>
+							<span
+								className={`text-[10px] uppercase tracking-wider font-bold transition-all ${active ? "text-primary opacity-100" : "text-muted-foreground opacity-70"}`}
+							>
+								{item.label}
+							</span>
+						</button>
+					);
+				})}
+			</div>
+		</nav>
+	);
 }

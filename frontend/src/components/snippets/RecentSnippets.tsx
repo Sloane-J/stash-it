@@ -33,7 +33,7 @@ export function RecentSnippets({ snippets }: RecentSnippetsProps) {
 
   return (
     <div className="recent-snippets-section">
-      <h2 className="recent-snippets-heading">Recent Saved Snippets</h2>
+      <p className="recent-snippets-heading">Latest</p>
       
       <div className="recent-snippets-carousel">
         {recentSnippets.map((snippet) => {
