@@ -5,6 +5,15 @@
   gap: 1rem;
 }
 
+/* Main snippet header*/
+.main-snippet-header {
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--foreground);
+  margin-bottom: 1rem;
+  letter-spacing: -0.01em;
+}
+
 /* Stack layout (default) - single column */
 .snippet-grid--stack {
   display: flex;

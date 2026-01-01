@@ -107,17 +107,17 @@ export function HomePage() {
     <>
       <PageHeader layout={layout} onLayoutChange={setLayout} />
       <div className="max-w-5xl mx-auto py-6 space-y-6">
-       
+
         {/* Recent snippets carousel */}
         <RecentSnippets snippets={snippets} />
 
         {/* Main snippets grid */}
+        <p class="main-snippet-header">Your Snippets</p>
         <div className={`snippet-grid snippet-grid--${layout}`}>
-          {snippets.map((snippet) => (
+          {snippets.slice(5).map((snippet) => (
             <SnippetCard
               key={snippet.id}
               snippet={snippet}
-              layout={layout}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onAddToCollection={handleAddToCollection}
