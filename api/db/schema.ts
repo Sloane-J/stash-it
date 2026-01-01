@@ -8,10 +8,134 @@ import {
 import { sql } from "drizzle-orm";
 
 // ============================================
-// BETTER AUTH TABLES
+// PER-USER DATABASE SCHEMA
+// ============================================
+// NOTE: This schema is for EACH user's individual database
+// Auth tables (users, sessions, accounts) remain in a SEPARATE shared database
 // ============================================
 
-// Users table - managed by Better Auth
+// Snippets table - stores all research content
+// NO userId - entire database belongs to one user
+export const snippets = sqliteTable(
+  "snippets",
+  {
+    id: text("id").primaryKey(),
+    type: text("type").notNull(), // 'quote' | 'note' | 'source' | 'summary' | 'link'
+    content: text("content").notNull(),
+    metadata: text("metadata", { mode: "json" }), // Flexible JSON field for type-specific data
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    typeIdx: index("snippets_type_idx").on(table.type),
+    createdAtIdx: index("snippets_created_at_idx").on(table.createdAt),
+  }),
+);
+
+// Tags table - NO userId
+export const tags = sqliteTable(
+  "tags",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull().unique(), // Unique per user's database
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    nameIdx: index("tags_name_idx").on(table.name),
+  }),
+);
+
+// Snippet-Tags junction table (many-to-many)
+export const snippetTags = sqliteTable(
+  "snippet_tags",
+  {
+    snippetId: text("snippet_id")
+      .notNull()
+      .references(() => snippets.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.snippetId, table.tagId] }),
+    snippetIdIdx: index("snippet_tags_snippet_id_idx").on(table.snippetId),
+    tagIdIdx: index("snippet_tags_tag_id_idx").on(table.tagId),
+  }),
+);
+
+// Collections table - NO userId
+export const collections = sqliteTable(
+  "collections",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+);
+
+// Snippet-Collections junction table (many-to-many)
+export const snippetCollections = sqliteTable(
+  "snippet_collections",
+  {
+    snippetId: text("snippet_id")
+      .notNull()
+      .references(() => snippets.id, { onDelete: "cascade" }),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collections.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.snippetId, table.collectionId] }),
+    snippetIdIdx: index("snippet_collections_snippet_id_idx").on(
+      table.snippetId,
+    ),
+    collectionIdIdx: index("snippet_collections_collection_id_idx").on(
+      table.collectionId,
+    ),
+  }),
+);
+
+// Images table - stores metadata for ImageKit uploads
+// NO userId
+export const images = sqliteTable(
+  "images",
+  {
+    id: text("id").primaryKey(),
+    snippetId: text("snippet_id").references(() => snippets.id, {
+      onDelete: "cascade",
+    }),
+    imagekitFileId: text("imagekit_file_id").notNull(), // ImageKit file ID
+    imagekitUrl: text("imagekit_url").notNull(), // Public URL
+    fileSize: integer("file_size").notNull(), // In bytes
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => ({
+    snippetIdIdx: index("images_snippet_id_idx").on(table.snippetId),
+  }),
+);
+
+// ============================================
+// AUTH SCHEMA (SEPARATE SHARED DATABASE)
+// ============================================
+// These tables will be in a DIFFERENT database called "stashit-auth"
+// Keep them here for reference, but they won't be in user databases
+// ============================================
+
+// Users table - managed by Better Auth (SHARED DATABASE ONLY)
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -19,7 +143,8 @@ export const users = sqliteTable("users", {
     .notNull()
     .default(false),
   name: text("name"),
-  password: text("password"), // ADD THIS
+  password: text("password"), // Hashed password for email/password auth
+  databaseId: text("database_id"), // NEW: References user's D1 database ID
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -28,7 +153,7 @@ export const users = sqliteTable("users", {
     .default(sql`(unixepoch())`),
 });
 
-// Sessions table - managed by Better Auth
+// Sessions table - managed by Better Auth (SHARED DATABASE ONLY)
 export const sessions = sqliteTable(
   "sessions",
   {
@@ -52,7 +177,7 @@ export const sessions = sqliteTable(
   }),
 );
 
-// Accounts table - for social login providers (GitHub, Google, etc.)
+// Accounts table - for social login providers (SHARED DATABASE ONLY)
 export const accounts = sqliteTable(
   "accounts",
   {
@@ -83,7 +208,7 @@ export const accounts = sqliteTable(
   }),
 );
 
-// Verification tokens - for email verification and password reset
+// Verification tokens - for email verification (SHARED DATABASE ONLY)
 export const verificationTokens = sqliteTable(
   "verification_tokens",
   {
@@ -99,139 +224,5 @@ export const verificationTokens = sqliteTable(
     identifierIdx: index("verification_tokens_identifier_idx").on(
       table.identifier,
     ),
-  }),
-);
-
-// ============================================
-// APPLICATION TABLES
-// ============================================
-
-// Snippets table - stores all research content
-export const snippets = sqliteTable(
-  "snippets",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").notNull(), // 'quote' | 'note' | 'source' | 'summary' | 'link'
-    content: text("content").notNull(),
-    metadata: text("metadata", { mode: "json" }), // Flexible JSON field for type-specific data
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => ({
-    userIdIdx: index("snippets_user_id_idx").on(table.userId),
-    typeIdx: index("snippets_type_idx").on(table.type),
-    createdAtIdx: index("snippets_created_at_idx").on(table.createdAt),
-  }),
-);
-
-// Tags table
-export const tags = sqliteTable(
-  "tags",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => ({
-    userIdIdx: index("tags_user_id_idx").on(table.userId),
-    nameIdx: index("tags_name_idx").on(table.name),
-  }),
-);
-
-// Snippet-Tags junction table (many-to-many)
-export const snippetTags = sqliteTable(
-  "snippet_tags",
-  {
-    snippetId: text("snippet_id")
-      .notNull()
-      .references(() => snippets.id, { onDelete: "cascade" }),
-    tagId: text("tag_id")
-      .notNull()
-      .references(() => tags.id, { onDelete: "cascade" }),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.snippetId, table.tagId] }),
-    snippetIdIdx: index("snippet_tags_snippet_id_idx").on(table.snippetId),
-    tagIdIdx: index("snippet_tags_tag_id_idx").on(table.tagId),
-  }),
-);
-
-// Collections table
-export const collections = sqliteTable(
-  "collections",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    name: text("name").notNull(),
-    description: text("description"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => ({
-    userIdIdx: index("collections_user_id_idx").on(table.userId),
-  }),
-);
-
-// Snippet-Collections junction table (many-to-many)
-export const snippetCollections = sqliteTable(
-  "snippet_collections",
-  {
-    snippetId: text("snippet_id")
-      .notNull()
-      .references(() => snippets.id, { onDelete: "cascade" }),
-    collectionId: text("collection_id")
-      .notNull()
-      .references(() => collections.id, { onDelete: "cascade" }),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.snippetId, table.collectionId] }),
-    snippetIdIdx: index("snippet_collections_snippet_id_idx").on(
-      table.snippetId,
-    ),
-    collectionIdIdx: index("snippet_collections_collection_id_idx").on(
-      table.collectionId,
-    ),
-  }),
-);
-
-// Images table - stores metadata for ImageKit uploads
-export const images = sqliteTable(
-  "images",
-  {
-    id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    snippetId: text("snippet_id").references(() => snippets.id, {
-      onDelete: "cascade",
-    }),
-    imagekitFileId: text("imagekit_file_id").notNull(), // ImageKit file ID
-    imagekitUrl: text("imagekit_url").notNull(), // Public URL
-    fileSize: integer("file_size").notNull(), // In bytes
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-  (table) => ({
-    userIdIdx: index("images_user_id_idx").on(table.userId),
-    snippetIdIdx: index("images_snippet_id_idx").on(table.snippetId),
   }),
 );
