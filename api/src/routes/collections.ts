@@ -1,10 +1,14 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { collections, snippetCollections, snippets } from '../../db/schema'
-import { db } from '../lib/db'
+import { getAuthDb } from '../lib/db'
 import { requireAuth } from '../middleware/auth'
+import type { Env } from '../lib/db'
 
-const router = new Hono()
+const router = new Hono<{
+  Bindings: Env["Bindings"];
+  Variables: Env["Variables"];
+}>()
 
 // Generate unique ID
 const generateId = () => `col_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -12,7 +16,7 @@ const generateId = () => `col_${Date.now()}_${Math.random().toString(36).substr(
 // CREATE: Add new collection
 router.post('/', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const body = await c.req.json()
 
     const { name, description } = body
@@ -25,14 +29,13 @@ router.post('/', requireAuth, async (c) => {
     const now = new Date()
     const newCollection = {
       id: generateId(),
-      userId,
       name: name.trim(),
       description: description?.trim() || null,
       createdAt: now,
       updatedAt: now,
     }
 
-    await db.insert(collections).values(newCollection)
+    await authDb.insert(collections).values(newCollection)
 
     return c.json({
       success: true,
@@ -44,13 +47,13 @@ router.post('/', requireAuth, async (c) => {
   }
 })
 
-// READ: Get all user's collections with snippet count
+// READ: Get all collections with snippet count
 router.get('/', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
 
     // Get all collections with count of snippets in each
-    const userCollections = await db
+    const userCollections = await authDb
       .select({
         id: collections.id,
         name: collections.name,
@@ -61,9 +64,9 @@ router.get('/', requireAuth, async (c) => {
       })
       .from(collections)
       .leftJoin(snippetCollections, eq(collections.id, snippetCollections.collectionId))
-      .where(eq(collections.userId, userId))
       .groupBy(collections.id)
       .orderBy(desc(collections.createdAt))
+      .all()
 
     return c.json({
       collections: userCollections,
@@ -78,23 +81,20 @@ router.get('/', requireAuth, async (c) => {
 // READ: Get single collection
 router.get('/:id', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const collectionId = c.req.param('id')
 
-    const collection = await db
+    const collection = await authDb
       .select()
       .from(collections)
-      .where(and(
-        eq(collections.id, collectionId),
-        eq(collections.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(collections.id, collectionId))
+      .get()
 
-    if (!collection.length) {
+    if (!collection) {
       return c.json({ error: 'Collection not found' }, 404)
     }
 
-    return c.json({ collection: collection[0] })
+    return c.json({ collection: collection })
   } catch (error) {
     console.error('Error fetching collection:', error)
     return c.json({ error: 'Failed to fetch collection' }, 500)
@@ -104,21 +104,18 @@ router.get('/:id', requireAuth, async (c) => {
 // UPDATE: Edit collection
 router.put('/:id', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const collectionId = c.req.param('id')
     const body = await c.req.json()
 
-    // Check ownership
-    const existing = await db
+    // Check if collection exists
+    const existing = await authDb
       .select()
       .from(collections)
-      .where(and(
-        eq(collections.id, collectionId),
-        eq(collections.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(collections.id, collectionId))
+      .get()
 
-    if (!existing.length) {
+    if (!existing) {
       return c.json({ error: 'Collection not found' }, 404)
     }
 
@@ -131,21 +128,21 @@ router.put('/:id', requireAuth, async (c) => {
     if (body.description !== undefined) updates.description = body.description?.trim() || null
 
     // Update collection
-    await db
+    await authDb
       .update(collections)
       .set(updates)
       .where(eq(collections.id, collectionId))
 
     // Fetch updated collection
-    const updated = await db
+    const updated = await authDb
       .select()
       .from(collections)
       .where(eq(collections.id, collectionId))
-      .limit(1)
+      .get()
 
     return c.json({
       success: true,
-      collection: updated[0],
+      collection: updated,
     })
   } catch (error) {
     console.error('Error updating collection:', error)
@@ -156,25 +153,22 @@ router.put('/:id', requireAuth, async (c) => {
 // DELETE: Remove collection
 router.delete('/:id', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const collectionId = c.req.param('id')
 
-    // Check ownership
-    const existing = await db
+    // Check if collection exists
+    const existing = await authDb
       .select()
       .from(collections)
-      .where(and(
-        eq(collections.id, collectionId),
-        eq(collections.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(collections.id, collectionId))
+      .get()
 
-    if (!existing.length) {
+    if (!existing) {
       return c.json({ error: 'Collection not found' }, 404)
     }
 
     // Delete collection (cascade will remove from snippet_collections junction)
-    await db.delete(collections).where(eq(collections.id, collectionId))
+    await authDb.delete(collections).where(eq(collections.id, collectionId))
 
     return c.json({
       success: true,
@@ -189,7 +183,7 @@ router.delete('/:id', requireAuth, async (c) => {
 // ADD SNIPPET TO COLLECTION
 router.post('/:collectionId/snippets', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const collectionId = c.req.param('collectionId')
     const body = await c.req.json()
 
@@ -199,50 +193,44 @@ router.post('/:collectionId/snippets', requireAuth, async (c) => {
       return c.json({ error: 'snippetId is required' }, 400)
     }
 
-    // Verify collection ownership
-    const collection = await db
+    // Verify collection exists
+    const collection = await authDb
       .select()
       .from(collections)
-      .where(and(
-        eq(collections.id, collectionId),
-        eq(collections.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(collections.id, collectionId))
+      .get()
 
-    if (!collection.length) {
+    if (!collection) {
       return c.json({ error: 'Collection not found' }, 404)
     }
 
-    // Verify snippet ownership
-    const snippet = await db
+    // Verify snippet exists
+    const snippet = await authDb
       .select()
       .from(snippets)
-      .where(and(
-        eq(snippets.id, snippetId),
-        eq(snippets.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(snippets.id, snippetId))
+      .get()
 
-    if (!snippet.length) {
+    if (!snippet) {
       return c.json({ error: 'Snippet not found' }, 404)
     }
 
     // Check if already in collection
-    const existing = await db
+    const existing = await authDb
       .select()
       .from(snippetCollections)
       .where(and(
         eq(snippetCollections.collectionId, collectionId),
         eq(snippetCollections.snippetId, snippetId)
       ))
-      .limit(1)
+      .get()
 
-    if (existing.length > 0) {
+    if (existing) {
       return c.json({ error: 'Snippet already in collection' }, 400)
     }
 
     // Add snippet to collection
-    await db.insert(snippetCollections).values({
+    await authDb.insert(snippetCollections).values({
       collectionId,
       snippetId,
     })
@@ -260,28 +248,24 @@ router.post('/:collectionId/snippets', requireAuth, async (c) => {
 // GET COLLECTION'S SNIPPETS
 router.get('/:collectionId/snippets', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const collectionId = c.req.param('collectionId')
 
-    // Verify collection ownership
-    const collection = await db
+    // Verify collection exists
+    const collection = await authDb
       .select()
       .from(collections)
-      .where(and(
-        eq(collections.id, collectionId),
-        eq(collections.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(collections.id, collectionId))
+      .get()
 
-    if (!collection.length) {
+    if (!collection) {
       return c.json({ error: 'Collection not found' }, 404)
     }
 
     // Get all snippets in this collection
-    const collectionSnippets = await db
+    const collectionSnippets = await authDb
       .select({
         id: snippets.id,
-        userId: snippets.userId,
         type: snippets.type,
         content: snippets.content,
         metadata: snippets.metadata,
@@ -290,11 +274,9 @@ router.get('/:collectionId/snippets', requireAuth, async (c) => {
       })
       .from(snippets)
       .innerJoin(snippetCollections, eq(snippets.id, snippetCollections.snippetId))
-      .where(and(
-        eq(snippetCollections.collectionId, collectionId),
-        eq(snippets.userId, userId)
-      ))
+      .where(eq(snippetCollections.collectionId, collectionId))
       .orderBy(desc(snippets.createdAt))
+      .all()
 
     // Parse metadata
     const parsed = collectionSnippets.map(s => ({
@@ -303,7 +285,7 @@ router.get('/:collectionId/snippets', requireAuth, async (c) => {
     }))
 
     return c.json({
-      collection: collection[0],
+      collection: collection,
       snippets: parsed,
       count: parsed.length,
     })
@@ -316,26 +298,23 @@ router.get('/:collectionId/snippets', requireAuth, async (c) => {
 // REMOVE SNIPPET FROM COLLECTION
 router.delete('/:collectionId/snippets/:snippetId', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const collectionId = c.req.param('collectionId')
     const snippetId = c.req.param('snippetId')
 
-    // Verify collection ownership
-    const collection = await db
+    // Verify collection exists
+    const collection = await authDb
       .select()
       .from(collections)
-      .where(and(
-        eq(collections.id, collectionId),
-        eq(collections.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(collections.id, collectionId))
+      .get()
 
-    if (!collection.length) {
+    if (!collection) {
       return c.json({ error: 'Collection not found' }, 404)
     }
 
     // Remove snippet from collection
-    await db
+    await authDb
       .delete(snippetCollections)
       .where(and(
         eq(snippetCollections.collectionId, collectionId),
