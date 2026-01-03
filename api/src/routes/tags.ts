@@ -1,10 +1,14 @@
 import { Hono } from 'hono'
 import { requireAuth } from '../middleware/auth'
-import { db } from '../lib/db'
+import { getAuthDb } from '../lib/db'
 import { tags, snippetTags, snippets } from '../../db/schema'
-import { eq, and, sql } from 'drizzle-orm'
+import { eq, and, sql, desc } from 'drizzle-orm'
+import type { Env } from '../lib/db'
 
-const router = new Hono()
+const router = new Hono<{
+  Bindings: Env["Bindings"];
+  Variables: Env["Variables"];
+}>()
 
 // Generate unique ID
 const generateId = () => `tag_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
@@ -12,7 +16,7 @@ const generateId = () => `tag_${Date.now()}_${Math.random().toString(36).substr(
 // CREATE: Add new tag
 router.post('/', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const body = await c.req.json()
 
     const { name } = body
@@ -21,29 +25,25 @@ router.post('/', requireAuth, async (c) => {
       return c.json({ error: 'Tag name is required' }, 400)
     }
 
-    // Check if tag already exists for this user
-    const existing = await db
+    // Check if tag already exists (by name)
+    const existing = await authDb
       .select()
       .from(tags)
-      .where(and(
-        eq(tags.userId, userId),
-        eq(tags.name, name.trim().toLowerCase())
-      ))
-      .limit(1)
+      .where(eq(tags.name, name.trim().toLowerCase()))
+      .get()
 
-    if (existing.length > 0) {
+    if (existing) {
       return c.json({ error: 'Tag already exists' }, 400)
     }
 
     // Create tag
     const newTag = {
       id: generateId(),
-      userId,
       name: name.trim().toLowerCase(),
       createdAt: new Date(),
     }
 
-    await db.insert(tags).values(newTag)
+    await authDb.insert(tags).values(newTag)
 
     return c.json({
       success: true,
@@ -55,13 +55,13 @@ router.post('/', requireAuth, async (c) => {
   }
 })
 
-// READ: Get all user's tags with snippet count
+// READ: Get all tags with snippet count
 router.get('/', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
 
     // Get all tags with count of snippets using each tag
-    const userTags = await db
+    const userTags = await authDb
       .select({
         id: tags.id,
         name: tags.name,
@@ -70,9 +70,9 @@ router.get('/', requireAuth, async (c) => {
       })
       .from(tags)
       .leftJoin(snippetTags, eq(tags.id, snippetTags.tagId))
-      .where(eq(tags.userId, userId))
       .groupBy(tags.id)
       .orderBy(tags.name)
+      .all()
 
     return c.json({
       tags: userTags,
@@ -87,28 +87,24 @@ router.get('/', requireAuth, async (c) => {
 // GET SNIPPETS BY TAG: Get all snippets with a specific tag
 router.get('/:tagId/snippets', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const tagId = c.req.param('tagId')
 
-    // Verify tag ownership
-    const tag = await db
+    // Verify tag exists
+    const tag = await authDb
       .select()
       .from(tags)
-      .where(and(
-        eq(tags.id, tagId),
-        eq(tags.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(tags.id, tagId))
+      .get()
 
-    if (!tag.length) {
+    if (!tag) {
       return c.json({ error: 'Tag not found' }, 404)
     }
 
     // Get all snippets with this tag
-    const taggedSnippets = await db
+    const taggedSnippets = await authDb
       .select({
         id: snippets.id,
-        userId: snippets.userId,
         type: snippets.type,
         content: snippets.content,
         metadata: snippets.metadata,
@@ -117,10 +113,9 @@ router.get('/:tagId/snippets', requireAuth, async (c) => {
       })
       .from(snippets)
       .innerJoin(snippetTags, eq(snippets.id, snippetTags.snippetId))
-      .where(and(
-        eq(snippetTags.tagId, tagId),
-        eq(snippets.userId, userId)
-      ))
+      .where(eq(snippetTags.tagId, tagId))
+      .orderBy(desc(snippets.createdAt))
+      .all()
 
     // Parse metadata
     const parsed = taggedSnippets.map(s => ({
@@ -129,7 +124,7 @@ router.get('/:tagId/snippets', requireAuth, async (c) => {
     }))
 
     return c.json({
-      tag: tag[0],
+      tag: tag,
       snippets: parsed,
       count: parsed.length,
     })
@@ -142,25 +137,22 @@ router.get('/:tagId/snippets', requireAuth, async (c) => {
 // DELETE: Remove tag
 router.delete('/:id', requireAuth, async (c) => {
   try {
-    const userId = c.var.userId
+    const authDb = getAuthDb(c.env)
     const tagId = c.req.param('id')
 
-    // Check ownership
-    const existing = await db
+    // Check if tag exists
+    const existing = await authDb
       .select()
       .from(tags)
-      .where(and(
-        eq(tags.id, tagId),
-        eq(tags.userId, userId)
-      ))
-      .limit(1)
+      .where(eq(tags.id, tagId))
+      .get()
 
-    if (!existing.length) {
+    if (!existing) {
       return c.json({ error: 'Tag not found' }, 404)
     }
 
     // Delete tag (cascade will remove from snippet_tags junction table)
-    await db.delete(tags).where(eq(tags.id, tagId))
+    await authDb.delete(tags).where(eq(tags.id, tagId))
 
     return c.json({
       success: true,
