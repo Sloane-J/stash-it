@@ -7,10 +7,15 @@ import snippetRoutes from "./routes/snippets";
 import tagRoutes from "./routes/tags";
 import collectionRoutes from "./routes/collections";
 import imageRoutes from "./routes/images";
+import type { Env } from "./lib/db";
 
-const app = new Hono();
+// Create Hono app with full Env type (Bindings + Variables)
+const app = new Hono<{
+  Bindings: Env["Bindings"];
+  Variables: Env["Variables"];
+}>();
 
-// CORS
+// CORS - Updated for production
 app.use(
   "/*",
   cors({
@@ -30,6 +35,7 @@ app.get("/", (c) => {
     status: "ok",
     message: "Stash It API v1.0",
     timestamp: new Date().toISOString(),
+    environment: c.env.NODE_ENV || "development",
   });
 });
 
@@ -39,7 +45,7 @@ app.route("/api", userRoutes);
 app.route("/api/snippets", snippetRoutes);
 app.route("/api/tags", tagRoutes);
 app.route("/api/collections", collectionRoutes);
-app.route('/api/images', imageRoutes); // Add this
+app.route("/api/images", imageRoutes);
 
 // Error handlers
 app.onError((err, c) => {
@@ -57,11 +63,5 @@ app.notFound((c) => {
   return c.json({ error: "Not found" }, 404);
 });
 
-// Start server
-const port = process.env.PORT || 3000;
-console.log(`🚀 Server running on http://localhost:${port}`);
-
-export default {
-  port,
-  fetch: app.fetch,
-};
+// Export for Cloudflare Workers
+export default app;

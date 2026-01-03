@@ -1,11 +1,23 @@
 import { Hono } from "hono";
-import { auth } from "../lib/auth";
+import { createAuth } from "../lib/auth";
+import type { Env } from "../lib/db";
 
-const router = new Hono();
+// Auth routes with proper typing
+const authRoutes = new Hono<{ 
+  Bindings: Env["Bindings"];
+  Variables: Env["Variables"];
+}>();
 
-// Better Auth handler - handles ALL auth requests
-router.all("/*", async (c) => {
+// Better Auth handler - handles all auth endpoints
+// POST /api/auth/sign-in/email
+// POST /api/auth/sign-up/email
+// POST /api/auth/sign-out
+// GET  /api/auth/callback/google
+// GET  /api/auth/session
+// etc.
+authRoutes.on(["POST", "GET"], "/*", async (c) => {
+  const auth = createAuth(c.env);
   return auth.handler(c.req.raw);
 });
 
-export default router;
+export default authRoutes;

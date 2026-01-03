@@ -1,25 +1,26 @@
 {
   "name": "stash-it",
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate:local": "wrangler d1 migrations apply stashit-auth --local --migrations-dir=db/migrations && wrangler d1 migrations apply stashit-template --local --migrations-dir=db/migrations",
+    "db:migrate:remote": "wrangler d1 migrations apply stashit-auth --remote --migrations-dir=db/migrations && wrangler d1 migrations apply stashit-template --remote --migrations-dir=db/migrations",
     "db:studio": "drizzle-kit studio",
-    "db:push": "drizzle-kit push"
+    "db:setup": "bun run db:generate && bun run db:migrate:local"
   },
   "dependencies": {
-    "@libsql/client": "^0.15.15",
     "better-auth": "^1.4.6",
-    "better-sqlite3": "^12.5.0",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.0",
     "hono": "^4.10.7",
     "imagekit": "^6.0.0",
-    "resend": "^6.5.2"
+    "resend": "^4.0.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
+    "@cloudflare/workers-types": "^4.20250107.0",
     "@types/bun": "latest",
-    "drizzle-kit": "^0.31.8"
+    "drizzle-kit": "^0.31.8",
+    "wrangler": "^4.54.0"
   }
 }

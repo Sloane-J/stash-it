@@ -1,10 +1,14 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
-import { snippets, snippets, snippetTags, tags } from "../../db/schema";
-import { db } from "../lib/db";
+import { snippets, snippetTags, tags } from "../../db/schema";
+import { getAuthDb } from "../lib/db";
 import { requireAuth } from "../middleware/auth";
+import type { Env } from "../lib/db";
 
-const router = new Hono();
+const router = new Hono<{
+  Bindings: Env["Bindings"];
+  Variables: Env["Variables"];
+}>();
 
 // Generate unique ID (simple implementation)
 const generateId = () =>
@@ -13,7 +17,8 @@ const generateId = () =>
 // CREATE: Add new snippet
 router.post("/", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const userId = c.get("userId");
+    const authDb = getAuthDb(c.env);
     const body = await c.req.json();
 
     // Validate required fields
@@ -36,7 +41,6 @@ router.post("/", requireAuth, async (c) => {
     const now = new Date();
     const newSnippet = {
       id: generateId(),
-      userId,
       type,
       content,
       metadata: metadata ? JSON.stringify(metadata) : null,
@@ -44,7 +48,7 @@ router.post("/", requireAuth, async (c) => {
       updatedAt: now,
     };
 
-    await db.insert(snippets).values(newSnippet);
+    await authDb.insert(snippets).values(newSnippet);
 
     return c.json(
       {
@@ -65,13 +69,13 @@ router.post("/", requireAuth, async (c) => {
 // READ: Get all user's snippets
 router.get("/", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
 
-    const userSnippets = await db
+    const userSnippets = await authDb
       .select()
       .from(snippets)
-      .where(eq(snippets.userId, userId))
-      .orderBy(desc(snippets.createdAt));
+      .orderBy(desc(snippets.createdAt))
+      .all();
 
     // Parse metadata JSON
     const parsed = userSnippets.map((s) => ({
@@ -92,23 +96,19 @@ router.get("/", requireAuth, async (c) => {
 // SEARCH: Search snippets by content (MUST BE BEFORE /:id route!)
 router.get("/search", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
     const query = c.req.query("q");
 
     if (!query) {
       return c.json({ error: "Search query required" }, 400);
     }
 
-    const results = await db
+    const results = await authDb
       .select()
       .from(snippets)
-      .where(
-        and(
-          eq(snippets.userId, userId),
-          sql`${snippets.content} LIKE ${`%${query}%`}`,
-        ),
-      )
-      .orderBy(desc(snippets.createdAt));
+      .where(sql`${snippets.content} LIKE ${`%${query}%`}`)
+      .orderBy(desc(snippets.createdAt))
+      .all();
 
     const parsed = results.map((s) => ({
       ...s,
@@ -129,24 +129,22 @@ router.get("/search", requireAuth, async (c) => {
 // READ: Get single snippet
 router.get("/:id", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
     const snippetId = c.req.param("id");
 
-    const snippet = await db
+    const snippet = await authDb
       .select()
       .from(snippets)
-      .where(and(eq(snippets.id, snippetId), eq(snippets.userId, userId)))
-      .limit(1);
+      .where(eq(snippets.id, snippetId))
+      .get();
 
-    if (!snippet.length) {
+    if (!snippet) {
       return c.json({ error: "Snippet not found" }, 404);
     }
 
     const parsed = {
-      ...snippet[0],
-      metadata: snippet[0].metadata
-        ? JSON.parse(snippet[0].metadata as string)
-        : null,
+      ...snippet,
+      metadata: snippet.metadata ? JSON.parse(snippet.metadata as string) : null,
     };
 
     return c.json({ snippet: parsed });
@@ -159,18 +157,18 @@ router.get("/:id", requireAuth, async (c) => {
 // UPDATE: Edit snippet
 router.put("/:id", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
     const snippetId = c.req.param("id");
     const body = await c.req.json();
 
-    // Check ownership
-    const existing = await db
+    // Check if snippet exists
+    const existing = await authDb
       .select()
       .from(snippets)
-      .where(and(eq(snippets.id, snippetId), eq(snippets.userId, userId)))
-      .limit(1);
+      .where(eq(snippets.id, snippetId))
+      .get();
 
-    if (!existing.length) {
+    if (!existing) {
       return c.json({ error: "Snippet not found" }, 404);
     }
 
@@ -195,20 +193,18 @@ router.put("/:id", requireAuth, async (c) => {
     }
 
     // Update snippet
-    await db.update(snippets).set(updates).where(eq(snippets.id, snippetId));
+    await authDb.update(snippets).set(updates).where(eq(snippets.id, snippetId));
 
     // Fetch updated snippet
-    const updated = await db
+    const updated = await authDb
       .select()
       .from(snippets)
       .where(eq(snippets.id, snippetId))
-      .limit(1);
+      .get();
 
     const parsed = {
-      ...updated[0],
-      metadata: updated[0].metadata
-        ? JSON.parse(updated[0].metadata as string)
-        : null,
+      ...updated,
+      metadata: updated!.metadata ? JSON.parse(updated!.metadata as string) : null,
     };
 
     return c.json({
@@ -224,22 +220,22 @@ router.put("/:id", requireAuth, async (c) => {
 // DELETE: Remove snippet
 router.delete("/:id", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
     const snippetId = c.req.param("id");
 
-    // Check ownership before deleting
-    const existing = await db
+    // Check if snippet exists
+    const existing = await authDb
       .select()
       .from(snippets)
-      .where(and(eq(snippets.id, snippetId), eq(snippets.userId, userId)))
-      .limit(1);
+      .where(eq(snippets.id, snippetId))
+      .get();
 
-    if (!existing.length) {
+    if (!existing) {
       return c.json({ error: "Snippet not found" }, 404);
     }
 
     // Delete snippet (cascade will handle related tags/images)
-    await db.delete(snippets).where(eq(snippets.id, snippetId));
+    await authDb.delete(snippets).where(eq(snippets.id, snippetId));
 
     return c.json({
       success: true,
@@ -254,20 +250,20 @@ router.delete("/:id", requireAuth, async (c) => {
 // ADD TAG TO SNIPPET: Link tag to snippet
 router.post("/:snippetId/tags", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
     const snippetId = c.req.param("snippetId");
     const body = await c.req.json();
 
     const { tagId, tagName } = body;
 
-    // Verify snippet ownership
-    const snippet = await db
+    // Verify snippet exists
+    const snippet = await authDb
       .select()
       .from(snippets)
-      .where(and(eq(snippets.id, snippetId), eq(snippets.userId, userId)))
-      .limit(1);
+      .where(eq(snippets.id, snippetId))
+      .get();
 
-    if (!snippet.length) {
+    if (!snippet) {
       return c.json({ error: "Snippet not found" }, 404);
     }
 
@@ -280,12 +276,11 @@ router.post("/:snippetId/tags", requireAuth, async (c) => {
 
       const newTag = {
         id: generateTagId(),
-        userId,
         name: tagName.trim().toLowerCase(),
         createdAt: new Date(),
       };
 
-      await db.insert(tags).values(newTag);
+      await authDb.insert(tags).values(newTag);
       finalTagId = newTag.id;
     }
 
@@ -293,19 +288,19 @@ router.post("/:snippetId/tags", requireAuth, async (c) => {
       return c.json({ error: "Either tagId or tagName is required" }, 400);
     }
 
-    // Verify tag ownership
-    const tag = await db
+    // Verify tag exists
+    const tag = await authDb
       .select()
       .from(tags)
-      .where(and(eq(tags.id, finalTagId), eq(tags.userId, userId)))
-      .limit(1);
+      .where(eq(tags.id, finalTagId))
+      .get();
 
-    if (!tag.length) {
+    if (!tag) {
       return c.json({ error: "Tag not found" }, 404);
     }
 
     // Check if already linked
-    const existing = await db
+    const existing = await authDb
       .select()
       .from(snippetTags)
       .where(
@@ -314,14 +309,14 @@ router.post("/:snippetId/tags", requireAuth, async (c) => {
           eq(snippetTags.tagId, finalTagId),
         ),
       )
-      .limit(1);
+      .get();
 
-    if (existing.length > 0) {
+    if (existing) {
       return c.json({ error: "Tag already added to snippet" }, 400);
     }
 
     // Link tag to snippet
-    await db.insert(snippetTags).values({
+    await authDb.insert(snippetTags).values({
       snippetId,
       tagId: finalTagId,
     });
@@ -329,7 +324,7 @@ router.post("/:snippetId/tags", requireAuth, async (c) => {
     return c.json({
       success: true,
       message: "Tag added to snippet",
-      tag: tag[0],
+      tag: tag,
     });
   } catch (error) {
     console.error("Error adding tag to snippet:", error);
@@ -340,22 +335,22 @@ router.post("/:snippetId/tags", requireAuth, async (c) => {
 // GET SNIPPET'S TAGS: Get all tags for a snippet
 router.get("/:snippetId/tags", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
     const snippetId = c.req.param("snippetId");
 
-    // Verify snippet ownership
-    const snippet = await db
+    // Verify snippet exists
+    const snippet = await authDb
       .select()
       .from(snippets)
-      .where(and(eq(snippets.id, snippetId), eq(snippets.userId, userId)))
-      .limit(1);
+      .where(eq(snippets.id, snippetId))
+      .get();
 
-    if (!snippet.length) {
+    if (!snippet) {
       return c.json({ error: "Snippet not found" }, 404);
     }
 
     // Get all tags for this snippet
-    const snippetTagsList = await db
+    const snippetTagsList = await authDb
       .select({
         id: tags.id,
         name: tags.name,
@@ -363,7 +358,8 @@ router.get("/:snippetId/tags", requireAuth, async (c) => {
       })
       .from(tags)
       .innerJoin(snippetTags, eq(tags.id, snippetTags.tagId))
-      .where(eq(snippetTags.snippetId, snippetId));
+      .where(eq(snippetTags.snippetId, snippetId))
+      .all();
 
     return c.json({
       snippetId,
@@ -379,23 +375,23 @@ router.get("/:snippetId/tags", requireAuth, async (c) => {
 // REMOVE TAG FROM SNIPPET: Unlink tag from snippet
 router.delete("/:snippetId/tags/:tagId", requireAuth, async (c) => {
   try {
-    const userId = c.var.userId;
+    const authDb = getAuthDb(c.env);
     const snippetId = c.req.param("snippetId");
     const tagId = c.req.param("tagId");
 
-    // Verify snippet ownership
-    const snippet = await db
+    // Verify snippet exists
+    const snippet = await authDb
       .select()
       .from(snippets)
-      .where(and(eq(snippets.id, snippetId), eq(snippets.userId, userId)))
-      .limit(1);
+      .where(eq(snippets.id, snippetId))
+      .get();
 
-    if (!snippet.length) {
+    if (!snippet) {
       return c.json({ error: "Snippet not found" }, 404);
     }
 
     // Delete the link
-    await db
+    await authDb
       .delete(snippetTags)
       .where(
         and(eq(snippetTags.snippetId, snippetId), eq(snippetTags.tagId, tagId)),

@@ -1,58 +1,33 @@
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { Resend } from "resend";
-import { db } from "./db";
-import * as schema from "../../db/schema"; // CHANGED: ../../db/
+import { createMiddleware } from "hono/factory";
+import { createAuth } from "../lib/auth";
+import type { Env } from "../lib/db";
 
-// Initialize Resend for sending emails
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Authentication middleware - protects routes
+export const requireAuth = createMiddleware<{
+  Bindings: Env["Bindings"];
+  Variables: Env["Variables"];
+}>(async (c, next) => {
+  // Create Better Auth instance with current environment
+  const auth = createAuth(c.env);
 
-export const auth = betterAuth({
-  // Database adapter - connects Better Auth to your Drizzle database
-  database: drizzleAdapter(db, {
-    provider: "sqlite",
-    schema: {
-      user: schema.users,
-      session: schema.sessions,
-      account: schema.accounts,
-      verification: schema.verificationTokens,
-    },
-  }),
+  // Get session from Better Auth
+  const session = await auth.api.getSession({
+    headers: c.req.raw.headers,
+  });
 
-  // Email configuration for verification and password reset
-  emailAndPassword: {
-    enabled: true,
-    requireEmailVerification: false,
-    sendResetPassword: async ({ user, url }) => {
-      await resend.emails.send({
-        from: process.env.FROM_EMAIL || "onboarding@resend.dev",
-        to: user.email,
-        subject: "Reset your password - Stash It",
-        html: `
-          <h2>Reset Your Password</h2>
-          <p>Click the link below to reset your password:</p>
-          <a href="${url}">Reset Password</a>
-          <p>This link expires in 1 hour.</p>
-          <p>If you didn't request this, ignore this email.</p>
-        `,
-      });
-    },
-  },
+  // If no session, return 401
+  if (!session || !session.user) {
+    return c.json({ error: "Unauthorized - Please sign in" }, 401);
+  }
 
-  // Allow requests from your frontend
-  trustedOrigins: [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    process.env.FRONTEND_URL || "",
-  ].filter(Boolean),
+  // Add user info to context for use in routes
+  c.set("userId", session.user.id);
+  c.set("user", session.user); // Use session.user directly for full type safety
 
-  // Session configuration
-  session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // Refresh session daily
-  },
+  // TODO: Add userDbBinding lookup here later
+  // This will query AUTH_DB to find which D1 database belongs to this user
+  // c.set("userDbBinding", `USER_DB_${session.user.id}`);
+
+  // Continue to the next middleware/handler
+  await next();
 });
-
-// Type exports for use in routes
-export type Session = typeof auth.$Infer.Session.session;
-export type User = typeof auth.$Infer.Session.user;
