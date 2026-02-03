@@ -1,33 +1,78 @@
-import { createMiddleware } from "hono/factory";
-import { createAuth } from "../lib/auth";
-import type { Env } from "../lib/db";
+// src/lib/auth.ts
 
-// Authentication middleware - protects routes
-export const requireAuth = createMiddleware<{
-  Bindings: Env["Bindings"];
-  Variables: Env["Variables"];
-}>(async (c, next) => {
-  // Create Better Auth instance with current environment
-  const auth = createAuth(c.env);
+import { eq } from "drizzle-orm";
+import { getAuthDb } from "./db";
+import type { Env } from "./db";
+import { sessions } from "../../db/schema";
 
-  // Get session from Better Auth
-  const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
+// How long a session should live (30 days)
+const SESSION_DURATION = 1000 * 60 * 60 * 24 * 30;
+
+/**
+ * Creates a new session for a user
+ * - Generates a random session ID
+ * - Stores it in the database with an expiry timestamp
+ */
+export const createSession = async (
+  env: Env["Bindings"],
+  userId: string,
+) => {
+  const db = getAuthDb(env);
+
+  const sessionId = crypto.randomUUID();
+  const expiresAt = Date.now() + SESSION_DURATION;
+
+  await db.insert(sessions).values({
+    id: sessionId,
+    userId,
+    expiresAt,
   });
 
-  // If no session, return 401
-  if (!session || !session.user) {
-    return c.json({ error: "Unauthorized - Please sign in" }, 401);
+  return {
+    sessionId,
+    expiresAt,
+  };
+};
+
+/**
+ * Validates a session from a cookie value
+ * - Checks if the session exists
+ * - Ensures it has not expired
+ */
+export const validateSession = async (
+  env: Env["Bindings"],
+  sessionId: string | null,
+) => {
+  if (!sessionId) return null;
+
+  const db = getAuthDb(env);
+
+  const session = await db.query.sessions.findFirst({
+    where: eq(sessions.id, sessionId),
+  });
+
+  if (!session) {
+    return null;
   }
 
-  // Add user info to context for use in routes
-  c.set("userId", session.user.id);
-  c.set("user", session.user); // Use session.user directly for full type safety
+  // Session expired
+  if (session.expiresAt <= Date.now()) {
+    await db.delete(sessions).where(eq(sessions.id, sessionId));
+    return null;
+  }
 
-  // TODO: Add userDbBinding lookup here later
-  // This will query AUTH_DB to find which D1 database belongs to this user
-  // c.set("userDbBinding", `USER_DB_${session.user.id}`);
+  return session;
+};
 
-  // Continue to the next middleware/handler
-  await next();
-});
+/**
+ * Invalidates a session (logout)
+ * - Deletes the session row from the database
+ */
+export const invalidateSession = async (
+  env: Env["Bindings"],
+  sessionId: string,
+) => {
+  const db = getAuthDb(env);
+
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
+};

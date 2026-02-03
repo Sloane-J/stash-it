@@ -1,9 +1,9 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { snippets, snippetTags, tags } from "../../db/schema";
+import type { Env } from "../lib/db";
 import { getAuthDb } from "../lib/db";
 import { requireAuth } from "../middleware/auth";
-import type { Env } from "../lib/db";
 
 const router = new Hono<{
   Bindings: Env["Bindings"];

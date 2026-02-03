@@ -17,7 +17,7 @@ migrations_dir = "db/migrations"
 binding = "DB"
 database_name = "stashit-template"
 database_id = "0d088c9a-f54e-4c76-8215-a2a3b9c5fd18"
-migrations_dir = "db/migratioins"
+migrations_dir = "db/migrations"
 
 [vars]
 NODE_ENV = "development"

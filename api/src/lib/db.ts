@@ -1,36 +1,46 @@
-import { createMiddleware } from "hono/factory";
-import { auth } from "../lib/auth";
-import type { Env } from "../lib/db";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "../../db/schema";
 
-// Authentication middleware - protects routes
-export const requireAuth = createMiddleware<{
-  Bindings: Env["Bindings"];
-  Variables: Env["Variables"];
-}>(async (c, next) => {
-  // Get session from Better Auth
-  const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  });
+// Type for Cloudflare Worker environment bindings and context variables
+export type Env = {
+  Bindings: {
+    AUTH_DB: D1Database;  // Shared auth database
+    DB: D1Database;       // Template database (for creating new user DBs)
+    // ImageKit credentials
+    IMAGEKIT_PUBLIC_KEY: string;
+    IMAGEKIT_PRIVATE_KEY: string;
+    IMAGEKIT_URL_ENDPOINT: string;
+    // Other environment variables
+    NODE_ENV: string;
+    // User databases accessed dynamically
+    [key: string]: any;
+  };
+  Variables: {
+    user: {
+      id: string;
+      email: string;
+      name: string | null;
+      emailVerified: boolean;
+    };
+    userId: string;
+    userDbBinding: string;  // The D1 binding name for this user's database
+  };
+};
 
-  // If no session, return 401
-  if (!session || !session.user) {
-    return c.json({ error: "Unauthorized - Please sign in" }, 401);
+// Create database instance for AUTH_DB (shared)
+export function getAuthDb(env: Env["Bindings"]) {
+  return drizzle(env.AUTH_DB, { schema });
+}
+
+// Create database instance for user's database
+// The binding name will be something like "USER_DB_xyz123"
+export function getUserDb(env: Env["Bindings"], dbBinding: string) {
+  const userDatabase = env[dbBinding] as D1Database;
+  if (!userDatabase) {
+    throw new Error(`Database binding "${dbBinding}" not found`);
   }
+  return drizzle(userDatabase, { schema });
+}
 
-  // Add user info to context for use in routes
-  // TypeScript now validates these against Env["Variables"]
-  c.set("userId", session.user.id);
-  c.set("user", {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    emailVerified: session.user.emailVerified,
-  });
-
-  // TODO: Add userDbBinding lookup here later
-  // This will query AUTH_DB to find which D1 database belongs to this user
-  // c.set("userDbBinding", `USER_DB_${session.user.id}`);
-
-  // Continue to the next middleware/handler
-  await next();
-});
+// Export schema for use in queries
+export { schema };

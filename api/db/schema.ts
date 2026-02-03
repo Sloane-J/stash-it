@@ -10,19 +10,15 @@ import { sql } from "drizzle-orm";
 // ============================================
 // PER-USER DATABASE SCHEMA
 // ============================================
-// NOTE: This schema is for EACH user's individual database
-// Auth tables (users, sessions, accounts) remain in a SEPARATE shared database
-// ============================================
 
-// Snippets table - stores all research content
-// NO userId - entire database belongs to one user
+// Snippets table
 export const snippets = sqliteTable(
   "snippets",
   {
     id: text("id").primaryKey(),
-    type: text("type").notNull(), // 'quote' | 'note' | 'source' | 'summary' | 'link'
+    type: text("type").notNull(),
     content: text("content").notNull(),
-    metadata: text("metadata", { mode: "json" }), // Flexible JSON field for type-specific data
+    metadata: text("metadata", { mode: "json" }),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -36,12 +32,12 @@ export const snippets = sqliteTable(
   }),
 );
 
-// Tags table - NO userId
+// Tags table
 export const tags = sqliteTable(
   "tags",
   {
     id: text("id").primaryKey(),
-    name: text("name").notNull().unique(), // Unique per user's database
+    name: text("name").notNull().unique(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -51,7 +47,7 @@ export const tags = sqliteTable(
   }),
 );
 
-// Snippet-Tags junction table (many-to-many)
+// Snippet-Tags junction table
 export const snippetTags = sqliteTable(
   "snippet_tags",
   {
@@ -69,23 +65,20 @@ export const snippetTags = sqliteTable(
   }),
 );
 
-// Collections table - NO userId
-export const collections = sqliteTable(
-  "collections",
-  {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
-    description: text("description"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-  },
-);
+// Collections table
+export const collections = sqliteTable("collections", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
 
-// Snippet-Collections junction table (many-to-many)
+// Snippet-Collections junction table
 export const snippetCollections = sqliteTable(
   "snippet_collections",
   {
@@ -107,8 +100,7 @@ export const snippetCollections = sqliteTable(
   }),
 );
 
-// Images table - stores metadata for ImageKit uploads
-// NO userId
+// Images table
 export const images = sqliteTable(
   "images",
   {
@@ -116,9 +108,9 @@ export const images = sqliteTable(
     snippetId: text("snippet_id").references(() => snippets.id, {
       onDelete: "cascade",
     }),
-    imagekitFileId: text("imagekit_file_id").notNull(), // ImageKit file ID
-    imagekitUrl: text("imagekit_url").notNull(), // Public URL
-    fileSize: integer("file_size").notNull(), // In bytes
+    imagekitFileId: text("imagekit_file_id").notNull(),
+    imagekitUrl: text("imagekit_url").notNull(),
+    fileSize: integer("file_size").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -128,14 +120,6 @@ export const images = sqliteTable(
   }),
 );
 
-// ============================================
-// AUTH SCHEMA (SEPARATE SHARED DATABASE)
-// ============================================
-// These tables will be in a DIFFERENT database called "stashit-auth"
-// Keep them here for reference, but they won't be in user databases
-// ============================================
-
-// Users table - managed by Better Auth (SHARED DATABASE ONLY)
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -143,8 +127,8 @@ export const users = sqliteTable("users", {
     .notNull()
     .default(false),
   name: text("name"),
-  password: text("password"), // Hashed password for email/password auth
-  databaseId: text("database_id"), // NEW: References user's D1 database ID
+  password: text("password"),
+  databaseId: text("database_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -153,31 +137,21 @@ export const users = sqliteTable("users", {
     .default(sql`(unixepoch())`),
 });
 
-// Sessions table - managed by Better Auth (SHARED DATABASE ONLY)
 export const sessions = sqliteTable(
   "sessions",
   {
-    id: text("id").primaryKey(),
+    id: text("id").primaryKey(), // session ID
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-    token: text("token").notNull().unique(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
   },
   (table) => ({
     userIdIdx: index("sessions_user_id_idx").on(table.userId),
   }),
 );
 
-// Accounts table - for social login providers (SHARED DATABASE ONLY)
+// Accounts table (optional, for OAuth)
 export const accounts = sqliteTable(
   "accounts",
   {
@@ -185,13 +159,13 @@ export const accounts = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    accountId: text("account_id").notNull(), // Provider's user ID
-    providerId: text("provider_id").notNull(), // 'github', 'google', etc.
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
     expiresAt: integer("expires_at", { mode: "timestamp" }),
-    password: text("password"), // For email/password auth (hashed)
+    password: text("password"),
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
@@ -208,12 +182,12 @@ export const accounts = sqliteTable(
   }),
 );
 
-// Verification tokens - for email verification (SHARED DATABASE ONLY)
+// Verification tokens
 export const verificationTokens = sqliteTable(
   "verification_tokens",
   {
     id: text("id").primaryKey(),
-    identifier: text("identifier").notNull(), // Email or user ID
+    identifier: text("identifier").notNull(),
     token: text("token").notNull().unique(),
     expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
     createdAt: integer("created_at", { mode: "timestamp" })
