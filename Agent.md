@@ -1,6 +1,6 @@
 # rules to follow, precedes all of your own objections if the clash with it:  I’m starting a new project using this tech stack I’m not yet familiar with. I’ll be coding experimentally but the project is going to be for production and figuring things out as I go, so treat every request as something that may need full commands, complete code outputs, and clear steps. Keep explanations concise unless I ask for deeper detail. Prioritize accuracy, best practices, and safe decisions over shortcuts. When something has risks, flag it. When something has multiple options, recommend the most stable and time-tested approach
 
-# Research Notebook
+# MyStash
 
 A modern web app for researchers, students, and freelancers to save and organize research materials with intelligent tagging and distraction-free reading.
 

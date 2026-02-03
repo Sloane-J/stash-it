@@ -1,3 +1,5 @@
+// src/index.ts
+
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
@@ -16,6 +18,8 @@ const app = new Hono<{
 }>();
 
 // --- Middleware ---
+
+// CORS
 app.use(
   "/*",
   cors({
@@ -23,14 +27,31 @@ app.use(
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 app.use("/*", logger());
 
+// CSRF protection middleware
+app.use("/*", async (c, next) => {
+  const method = c.req.method;
+
+  // Only protect state-changing requests
+  if (method === "POST" || method === "PUT" || method === "DELETE") {
+    const origin = c.req.header("Origin");
+    const frontendUrl = c.env.FRONTEND_URL;
+
+    if (!origin || !frontendUrl || origin !== frontendUrl) {
+      return c.json({ error: "Invalid request origin" }, 403);
+    }
+  }
+
+  await next();
+});
+
 // --- Routes ---
 
-// 1. Health check
+// Health check
 app.get("/", (c) => {
   return c.json({
     status: "ok",
@@ -40,15 +61,14 @@ app.get("/", (c) => {
   });
 });
 
-// 2. Better Auth Handler (Cloudflare Workers pattern)
-// Handles all GET/POST requests to /api/auth/*
+// Auth routes
 app.on(["GET", "POST"], "/api/auth/*", (c) => {
   const auth = createAuth(c.env);
   return auth.handler(c.req.raw);
 });
 
-// 3. Application Routes
-app.route("/api", userRoutes);        // /api/me
+// Application routes
+app.route("/api", userRoutes);
 app.route("/api/snippets", snippetRoutes);
 app.route("/api/tags", tagRoutes);
 app.route("/api/collections", collectionRoutes);
@@ -62,7 +82,7 @@ app.onError((err, c) => {
       error: "Internal server error",
       message: err.message,
     },
-    500
+    500,
   );
 });
 
