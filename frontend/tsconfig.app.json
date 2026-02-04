@@ -27,5 +27,5 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "../api/src/middleware/rateLimit.ts", "../api/src/lib/password.ts"]
 }

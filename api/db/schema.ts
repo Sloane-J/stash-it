@@ -120,6 +120,10 @@ export const images = sqliteTable(
   }),
 );
 
+// ============================================
+// AUTH / IDENTITY SCHEMA (Lucia-style)
+// ============================================
+
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
@@ -140,7 +144,7 @@ export const users = sqliteTable("users", {
 export const sessions = sqliteTable(
   "sessions",
   {
-    id: text("id").primaryKey(), // session ID
+    id: text("id").primaryKey(),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -151,7 +155,7 @@ export const sessions = sqliteTable(
   }),
 );
 
-// Accounts table (optional, for OAuth)
+// OAuth accounts (optional)
 export const accounts = sqliteTable(
   "accounts",
   {
@@ -182,21 +186,34 @@ export const accounts = sqliteTable(
   }),
 );
 
-// Verification tokens
-export const verificationTokens = sqliteTable(
-  "verification_tokens",
+// ============================================
+// EMAIL VERIFICATION & PASSWORD RESET
+// ============================================
+
+export const emailVerificationTokens = sqliteTable(
+  "email_verification_tokens",
   {
-    id: text("id").primaryKey(),
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull().unique(),
-    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" })
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id")
       .notNull()
-      .default(sql`(unixepoch())`),
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
   },
   (table) => ({
-    identifierIdx: index("verification_tokens_identifier_idx").on(
-      table.identifier,
-    ),
+    userIdIdx: index("email_verification_user_id_idx").on(table.userId),
+  }),
+);
+
+export const passwordResetTokens = sqliteTable(
+  "password_reset_tokens",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("password_reset_user_id_idx").on(table.userId),
   }),
 );
